@@ -1,0 +1,173 @@
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: 'Product Sans Medium';
+  src: url('https://fonts.gstatic.com/s/productsans/v5/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+/* Sidebar styles */
+.sidebar {
+  width: 250px;
+  background-color: #1e2a3a;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border: none;
+}
+
+.sidebar-header {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 16px;
+  width: 20px;
+  margin-right: 20px;
+}
+
+.menu-toggle span {
+  height: 2px;
+  width: 100%;
+  background-color: white;
+  display: block;
+}
+
+.user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: white;
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  font-family: 'Product Sans Medium', 'Arial', sans-serif;
+  border: none;
+}
+
+.nav-item {
+  position: relative;
+  padding: 15px 20px;
+  color: white;
+  text-decoration: none;
+  transition: background-color 0.3s;
+  border: none;
+}
+
+.nav-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  width: 80%;
+  height: 1.5px;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-item:hover, .nav-item.active {
+  background-color: #2c3e50;
+}
+
+.logout-container {
+  padding: 20px;
+  margin-top: auto;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.logout-button svg {
+  margin-right: 10px;
+}
+
+/* Main content styles */
+.main-content {
+  flex: 1;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-navbar {
+  background-color: #1e2a3a;
+  padding: 15px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.navbar-icons {
+  display: flex;
+  gap: 15px;
+}
+
+.icon-link {
+  color: white;
+}
+
+.content-wrapper {
+  flex: 1;
+  padding: 20px;
+  background-color: white;
+}
+
+/* Appointment table styles */
+.appointment-table {
+  width: 100%;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 15px 10px;
+  font-weight: bold;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background-color: #1e2a3a;
+  color: white;
+  padding: 15px 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.table-cell {
+  flex: 1;
+}
+
+.done-checkbox {
+  width: 20px;
+  height: 20px;
+}
