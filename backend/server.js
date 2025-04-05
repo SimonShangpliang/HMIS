@@ -17,6 +17,8 @@ import notificationRoutes from './routes/notification.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import billingRoutes from './routes/billing.routes.js';
 import facilityRoutes from './routes/facility.routes.js';
+import schedule from 'node-schedule';
+import { updateDailyOccupancy } from './controllers/analytics.controller.js';
 
 dotenv.config();
 
@@ -39,6 +41,13 @@ app.get("/", (req, res) => {
 app.get("/test",(req, res) => {
     res.send("Frontend Connected to Backend");
 })
+
+// Schedule the job to run at midnight every day
+schedule.scheduleJob('0 0 * * *', async () => {
+    console.log('Running daily occupancy update...');
+    await updateDailyOccupancy();
+});
+
 //routes
 app.use("/api/tests", testRoutes);
 app.use('/api/employees', employeeRoutes);
