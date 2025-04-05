@@ -125,6 +125,7 @@ function App() {
             <Route path="/patient/feedback" element={<Feedback />} />
             <Route path="/patient/doctor-profile" element={<DoctorProfile />} />
             <Route path="/patient/bills" element={<Bills />} />
+            <Route path="/patient/bills/:billId" element={<Bills />} />
             <Route path="/patient/consultations" element={<Consultations />} />
             <Route path="/patient/daily-progress" element={<DailyProgress />} />
 
