@@ -26,6 +26,11 @@ import PreviousConsultations from "./pages/patient/PreviousConsultations";
 import BookConsultation from "./pages/patient/BookConsultation";
 import BookedConsultation from "./pages/patient/BookedConsultation";
 import RescheduleConsultation from "./pages/patient/RescheduleConsultation";
+import ConsultationDetails from "./pages/patient/ConsultationDetails";
+import ConsultationReports from "./pages/patient/ConsultationReports";
+import ConsultationPrescriptions from "./pages/patient/ConsultationPrescryptions";
+import ConsultationDiagnosis from "./pages/patient/ConsultationDiagnosis";
+import ConsultantBills from "./pages/patient/ConsultantBills";
 
 import Consultations from "./pages/patient/Consultations";
 import DailyProgress from "./pages/patient/DailyProgress";
@@ -121,7 +126,7 @@ function App() {
 
           {/* Patient Routes */}
           <Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
-            <Route path="/patient" element={<PatientDashboard />} />
+            <Route path="/patient/profile" element={<PatientDashboard />} />
             <Route path="/patient/feedback" element={<Feedback />} />
             <Route path="/patient/doctor-profile" element={<DoctorProfile />} />
             <Route path="/patient/bills" element={<Bills />} />
@@ -129,7 +134,13 @@ function App() {
             <Route path="/patient/daily-progress" element={<DailyProgress />} />
 
             <Route path="/patient/previous-consultations" element={<PreviousConsultations />} />
-            <Route path="/patient/previous-consultations/:id" element={<PreviousConsultations />} />
+            {/* <Route path="/patient/previous-consultations/:id" element={<PreviousConsultations />} /> */}
+            {/* <Route path="/previous-consultations" element={<PreviousConsultations />} /> */}
+            <Route path="/patient/previous-consultations/:id" element={<ConsultationDetails />} />
+            <Route path="/patient/previous-consultations/:id/reports" element={<ConsultationReports />} />
+            <Route path="/patient/previous-consultations/:id/prescriptions" element={<ConsultationPrescriptions />} />
+            <Route path="/patient/previous-consultations/:id/diagnosis" element={<ConsultationDiagnosis />} />
+            <Route path="/patient/previous-consultations/:id/bills" element={<ConsultantBills />} />
             <Route path="/patient/book-consultation" element={<BookConsultation />} />
             <Route path="/patient/booked-consultation" element={<BookedConsultation />} />
             <Route path="/patient/reschedule-consultation/:consultationId" element={<RescheduleConsultation />} />

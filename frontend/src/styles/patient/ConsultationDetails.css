@@ -1,0 +1,31 @@
+/* ConsultationDetails.css */
+.consultation-details {
+    padding: 20px;
+  }
+  
+  .details-header {
+    margin-bottom: 20px;
+  }
+  
+  .details-header th,
+  .details-header td {
+    border-bottom: none; /* Remove bottom borders for the header */
+  }
+  
+  .options {
+    display: flex;
+    justify-content: space-around;
+  }
+  
+  .option-item {
+    background-color: #333333;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .option-item:hover {
+    background-color: #555555;
+  }
+  
