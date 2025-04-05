@@ -13,9 +13,9 @@ const EmployeeSchema = new Schema({
   email: { type: String, unique: true },
   password: String,
   profile_pic: String,
-  role: { 
-    type: String, 
-    enum: ["doctor", "nurse", "pharmacist", "receptionist", "admin", "pathologist", "driver"] 
+  role: {
+    type: String,
+    enum: ["doctor", "nurse", "pharmacist", "receptionist", "admin", "pathologist", "driver"]
   },
   dept_id: { type: String, ref: 'Department' },
   phone_number: String,
