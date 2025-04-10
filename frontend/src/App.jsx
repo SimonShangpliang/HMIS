@@ -8,6 +8,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Unauthorized from "./pages/Unauthorized";
+import FeaturesPage from './pages/FeaturesPage';
+import CommunityPage from './pages/CommunityPage';
+import TrendsPage from './pages/TrendsPage';
+import AboutPage from './pages/AboutPage';
+import TermsPage from './pages/terms';
+import PrivacyPolicyPage from './pages/privacy';
+import './App.css';
 
 // Common Pages
 import Profile from "./pages/common/Profile";
@@ -98,6 +105,12 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="/public-data" element={<PublicData />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/trends" element={<TrendsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage/>} />
+          <Route path= "/terms" element={<TermsPage/>} />
 
          {/* Role-Based Common Pages */}                  
          <Route element={<ProtectedRoute allowedRoles={["doctor", "nurse", "receptionist", "admin", "patient", "pathologist"]} />}>

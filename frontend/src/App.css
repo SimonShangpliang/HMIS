@@ -1,0 +1,33 @@
+:root {
+  --primary-blue: #1e2738;
+  --primary-green: #3a7564;
+  --light-gray: #f1f3f7;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--white);
+}
+
+.btn {
+  background-color: var(--primary-green);
+  color: var(--white);
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn:hover {
+  background-color: #2c5a4c;
+  transform: translateY(-2px);
+}
