@@ -1,7 +1,9 @@
 import express from 'express';
+import { searchInventory } from '../controllers/commonPagesController.js';
 
 const router = express.Router();
 
-// TODO: Add routes for inventory
+// Route to search inventory
+router.get('/search', searchInventory);
 
 export default router;
