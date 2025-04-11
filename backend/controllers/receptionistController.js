@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt';
 import  BedLog  from '../models/logs.js'; // Ensure the correct path to the BedLog model    
 import Bill from '../models/bill.js'; // Ensure the correct path to the Bill model
 // import mongoose from 'mongoose';
+import crypto from 'crypto';
+import { sendPasswordEmail } from "../config/sendMail.js"; // adjust the path
 
 // Controller for new patient registration
 export const registerNewPatient = async (req, res) => {
@@ -20,7 +22,6 @@ export const registerNewPatient = async (req, res) => {
             address,
             emergencyNumber,
             mobile,
-            password
         } = req.body;
 
         // // Validate required fields
@@ -28,23 +29,22 @@ export const registerNewPatient = async (req, res) => {
         //     return res.status(400).json({ message: 'All gay fields must be filled.' });
         // }
 
-        const requiredFields = {
-            patientName,
-            aadharId,
-            dob,
-            gender,
-            email,
-            mobile,
-            password
-        };
+        // const requiredFields = {
+        //     patientName,
+        //     aadharId,
+        //     dob,
+        //     gender,
+        //     email,
+        //     mobile
+        // };
 
-        const emptyFields = Object.keys(requiredFields).filter(field => !requiredFields[field]);
+        // const emptyFields = Object.keys(requiredFields).filter(field => !requiredFields[field]);
 
-        if (emptyFields.length > 0) {
-            return res.status(400).json({ 
-                message: `The following fields are missing: ${emptyFields.join(', ')}` 
-            });
-        }
+        // if (emptyFields.length > 0) {
+        //     return res.status(400).json({ 
+        //         message: `The following fields are missing: ${emptyFields.join(', ')}` 
+        //     });
+        // }
 
         // Check if email or Aadhar ID already exists
         const existingPatient = await Patient.findOne({ $or: [{ email }, { aadhar_number: aadharId }] });
@@ -53,7 +53,8 @@ export const registerNewPatient = async (req, res) => {
         }
 
         // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
+        let PlainPassword=crypto.randomBytes(8).toString('base64').slice(0, 8);
+        const hashedPassword = await bcrypt.hash(PlainPassword, 10);
 
         // Create a new patient instance
         const newPatient = new Patient({
@@ -68,7 +69,7 @@ export const registerNewPatient = async (req, res) => {
             gender: gender.toLowerCase(),
             address,
             patient_info: {
-                blood_group: bloodGroup,
+                bloodGrp: bloodGroup,
                 height,
                 weight
             }
@@ -76,6 +77,8 @@ export const registerNewPatient = async (req, res) => {
 
         // Save the patient to the database
         const savedPatient = await newPatient.save();
+        // Send email with password
+        await sendPasswordEmail(email,PlainPassword,);
 
         res.status(201).json({
             message: 'Patient registered successfully.',

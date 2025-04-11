@@ -22,8 +22,16 @@ const EmployeeSchema = new Schema({
   },
   dept_id: { type: mongoose.Types.ObjectId, ref: 'Department' },
   phone_number: String,
+  emergency_contact: String,
+  
+  bloodGrp: { 
+    type: String, 
+    enum: ["A+", "B+", "AB+", "O+", "A-", "B-", "AB-", "O-"] 
+  },
+
   address: String,
   date_of_birth: Date,
+  aadhar_number: { type: String, unique: true },
   date_of_joining: Date,
   gender: { type: String, enum: ["male", "female"] },
   salary: Number,

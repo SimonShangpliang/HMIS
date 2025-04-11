@@ -1,9 +1,59 @@
 import Patient from '../models/patient.js';
-import { Doctor } from '../models/staff.js';
-import Employee from '../models/employee.js'; 
-import Diagnosis from '../models/diagnosis.js';
-import Bill from '../models/bill.js';
-import { Consultation, Prescription, Feedback } from '../models/consultation.js';
+import { Consultation } from '../models/consultation.js';
+import bcrypt from 'bcrypt';
+
+
+
+export const registerPatient = async (req, res) => {
+  try {
+    const {
+      patientName,
+      aadharId,
+      dob,
+      gender,
+      bloodGroup,
+      email,
+      height,
+      weight,
+      address,
+      emergencyNumber,
+      mobile,
+      password
+    } = req.body;
+
+    const existingPatient = await Patient.findOne({ $or: [{ email }, { aadhar_number: aadharId }] });
+    if (existingPatient) {
+        return res.status(400).json({ message: 'Email or Aadhar ID already exists.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newPatient = new Patient({
+      password: hashedPassword,
+      name: patientName,
+      phone_number: mobile,
+      emergency_contact: emergencyNumber,
+      email,
+      date_of_birth: dob,
+      aadhar_number: aadharId,
+      gender: gender.toLowerCase(),
+      address,
+      patient_info: {
+        height,
+        weight,
+        bloodGrp: bloodGroup
+      }
+    });
+
+    await newPatient.save();
+    res.status(201).json({ message: 'Patient registered successfully' });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 
 // @desc Get full patient profile
 export const FetchPatientProfile = async (req, res) => {

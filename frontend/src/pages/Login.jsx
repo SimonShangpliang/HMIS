@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
@@ -6,30 +6,60 @@ import { useAuth } from "../context/AuthContext";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState("patient"); // Toggle state
+  const [userType, setUserType] = useState("patient");
+  const [message, setMessage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { setToken, setRole } = useAuth();
+  const { setToken, setRole, setUser } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     try {
-      const res = await login({ email, password, userType }); // Pass userType if needed
+      const res = await login({ email, password, userType });
+
       setToken(res.data.accessToken);
       setRole(res.data.role);
-      localStorage.setItem("role", role);
-      localStorage.setItem("user", JSON.stringify(user)); // includes _id
-      
-      if(userType==="patient") navigate("/patient")
-     
-      // navigate(`/${res.data.role}/profile`)
+      setUser(res.data.user);
+      localStorage.setItem("role", res.data.role);
+      localStorage.setItem("email", JSON.stringify(res.data.user.email));
+
+      setMessage({ type: "success", text: "Login successful!" });
+
+      setTimeout(() => {
+        if (userType === "patient") navigate("/patient/profile");
+        else navigate(`/${res.data.role}/profile`);
+      }, 1500);
     } catch (err) {
       console.error("Login failed", err);
+      setMessage({
+        type: "error",
+        text: err?.response?.data?.message || "Invalid email or password",
+      });
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setMessage(null), 5000);
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
+    <div className="relative min-h-screen bg-gray-100 flex justify-center items-center">
+      {/* Message bar outside the login box */}
+      {message && (
+        <div
+          className={`absolute top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-md shadow-lg text-sm font-medium z-50 ${
+            message.type === "success"
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
+      {/* Login box */}
       <div className="bg-white p-8 rounded-xl shadow-lg w-96 text-center">
         <img
           src="/profile-icon.png"
@@ -37,7 +67,7 @@ const Login = () => {
           className="w-32 h-32 rounded-full mx-auto mb-4 transition-transform duration-300 hover:scale-110"
         />
 
-        {/* Toggle Button */}
+        {/* Toggle Buttons */}
         <div className="flex justify-center mb-6 space-x-4">
           <button
             type="button"
@@ -80,14 +110,22 @@ const Login = () => {
             className="w-full p-3 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
             required
           />
-          <div className="text-right text-sm italic text-gray-600">
-            Forgot Password ?
+
+          <div
+            className="text-right text-sm italic text-teal-600 cursor-pointer hover:underline"
+            onClick={() => navigate("/forgot-password", { state: { userType } })}
+          >
+            Forgot Password?
           </div>
+
           <button
             type="submit"
-            className="w-full p-3 bg-teal-700 text-white rounded-lg text-lg hover:bg-teal-800"
+            disabled={isSubmitting}
+            className={`w-full p-3 rounded-lg text-white text-lg ${
+              isSubmitting ? "bg-gray-400" : "bg-teal-700 hover:bg-teal-800"
+            }`}
           >
-            LOGIN
+            {isSubmitting ? "Logging in..." : "LOGIN"}
           </button>
         </form>
       </div>

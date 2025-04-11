@@ -1,10 +1,24 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState,useContext } from "react";
+import { Link,useNavigate } from "react-router-dom";
+import { logout } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
 import { List } from "lucide-react"; // Import menu icon
 
 const Navbar = ({ toggleSidebar,isSidebarOpen }) => {
-  const { user, logout } = useAuth();
+  const { setToken, setRole,setUser,user } = useAuth();
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    try {
+      const res = await logout();
+      setToken(null);
+      setRole(null);
+      setUser(null);
+      localStorage.clear();
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
 
   return (
     <nav className="flex justify-between items-center px-6 py-4 bg-gray-900 text-white shadow-md">
@@ -33,7 +47,7 @@ const Navbar = ({ toggleSidebar,isSidebarOpen }) => {
               Welcome, <span className="font-semibold">{user.name}</span> ({user.role})
             </span>
             <button 
-              onClick={logout} 
+              onClick={handleLogout} 
               className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition"
             >
               Logout

@@ -2,51 +2,128 @@
 import pdf from 'pdfkit';
 import fs from 'fs';
 import bodyParser from 'body-parser';
+import cloudinary from 'cloudinary';
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 import Payroll from '../models/payroll.js';
 import Employee from '../models/employee.js'; // Import Employee model
 import Medicine from '../models/inventory.js'; // Import Medicine model
 import { Doctor, Nurse, Pharmacist, Receptionist, Admin, Pathologist, Driver } from '../models/staff.js'; // Import staff models
+import { sendPasswordEmail } from "../config/sendMail.js"; // adjust the path
+import nodemailer from 'nodemailer';
+// import getStream from 'get-stream'; // utility to convert stream to buffer
+import PDFDocument from 'pdfkit';
 
-export const generatePayslip = async (req, res, next) => {
+// export const generatePayslip = async (req, res, next) => {
+//     try {
+//         const { employee_id, basic_salary, allowance, deduction, net_salary, month_year } = req.body;
+
+//         // Create a new PDF document
+//         const doc = new pdf();
+
+//         // Define the file path for the generated PDF
+//         const filePath = `payslips/payslip_${employee_id}_${Date.now()}.pdf`;
+
+//         // Pipe the PDF to a writable stream
+//         doc.pipe(fs.createWriteStream(filePath));
+
+//         // Add content to the PDF
+//         doc.fontSize(20).text('Payslip', { align: 'center' });
+//         doc.moveDown();
+//         doc.fontSize(12).text(`Employee ID: ${employee_id}`);
+//         doc.text(`Month/Year: ${new Date(month_year).toLocaleDateString()}`);
+//         doc.text(`Basic Salary: ${basic_salary}`);
+//         doc.text(`Allowance: ${allowance}`);
+//         doc.text(`Deduction: ${deduction}`);
+//         doc.text(`Net Salary: ${net_salary}`);
+//         doc.moveDown();
+//         doc.text('Thank you for your service!', { align: 'center' });
+
+//         // Finalize the PDF and end the stream
+//         doc.end();
+
+//         // Respond with the file path
+//         res.status(200).json({ message: 'Payslip generated successfully', filePath });
+//     } catch (error) {
+//         console.error('Error generating payslip:', error);
+//         if (res && res.status) {
+//             res.status(500).json({ message: 'Failed to generate payslip', error });
+//         } else {
+//             console.error('Response object is undefined or invalid.');
+//         }
+//     }
+// };
+
+export const generatePayslip = async (req, res) => {
     try {
-        const { employee_id, basic_salary, allowance, deduction, net_salary, month_year } = req.body;
-
-        // Create a new PDF document
-        const doc = new pdf();
-
-        // Define the file path for the generated PDF
-        const filePath = `payslips/payslip_${employee_id}_${Date.now()}.pdf`;
-
-        // Pipe the PDF to a writable stream
-        doc.pipe(fs.createWriteStream(filePath));
-
-        // Add content to the PDF
-        doc.fontSize(20).text('Payslip', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).text(`Employee ID: ${employee_id}`);
-        doc.text(`Month/Year: ${new Date(month_year).toLocaleDateString()}`);
-        doc.text(`Basic Salary: ${basic_salary}`);
-        doc.text(`Allowance: ${allowance}`);
-        doc.text(`Deduction: ${deduction}`);
-        doc.text(`Net Salary: ${net_salary}`);
-        doc.moveDown();
-        doc.text('Thank you for your service!', { align: 'center' });
-
-        // Finalize the PDF and end the stream
-        doc.end();
-
-        // Respond with the file path
-        res.status(200).json({ message: 'Payslip generated successfully', filePath });
+      const {
+        employee_id,
+        basic_salary,
+        allowance,
+        deduction,
+        net_salary,
+        month_year,
+        email
+      } = req.body;
+  
+      // 1. Generate PDF in memory
+      const doc = new PDFDocument();
+      let buffers = [];
+      
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', async () => {
+        const pdfBuffer = Buffer.concat(buffers);
+  
+        // 2. Configure Nodemailer transporter
+        let transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.USER,
+            pass: process.env.PASS,
+          }
+        });
+  
+        // 3. Compose and send email with PDF as attachment
+        await transporter.sendMail({
+          from: '"Admin Department" hmis.iitg@gmail.com',
+          to: email,
+          subject: 'Your Monthly Payslip',
+          text: 'Please find your payslip attached.',
+          attachments: [
+            {
+              filename: `payslip_${employee_id}.pdf`,
+              content: pdfBuffer,
+              contentType: 'application/pdf'
+            }
+          ]
+        });
+  
+        // 4. Respond to client
+        res.status(200).json({ message: 'Payslip generated and emailed successfully!' });
+      });
+  
+      // 5. Write PDF content
+      doc.fontSize(20).text('Payslip', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Employee ID: ${employee_id}`);
+      doc.text(`Month/Year: ${new Date(month_year).toLocaleDateString()}`);
+      doc.text(`Basic Salary: ${basic_salary}`);
+      doc.text(`Allowance: ${allowance}`);
+      doc.text(`Deduction: ${deduction}`);
+      doc.text(`Net Salary: ${net_salary}`);
+      doc.moveDown();
+      doc.text('Thank you for your service!', { align: 'center' });
+  
+      doc.end(); // This triggers the 'end' event
+  
     } catch (error) {
-        console.error('Error generating payslip:', error);
-        if (res && res.status) {
-            res.status(500).json({ message: 'Failed to generate payslip', error });
-        } else {
-            console.error('Response object is undefined or invalid.');
-        }
+      console.error('Error sending payslip email:', error);
+      res.status(500).json({ message: 'Failed to generate/send payslip', error });
     }
-};
+  };
+
+
 
 export const searchEmployees = async (req, res) => { 
     try {
@@ -136,30 +213,41 @@ export const updateInventory = async (req, res) => {
 
 export const addStaff = async (req, res) => {
     try {
-        const { name, email, password, profile_pic, role, dept_id, phone_number, emergency_phone, address, date_of_birth, date_of_joining, gender, blood_group, salary, aadhar_id, bank_details } = req.body;
+        const { name, email,  role, dept_id, phone_number, emergency_phone, address, date_of_birth, date_of_joining, gender, blood_group, salary, aadhar_id, bank_details } = req.body;
+        const existingPatient = await Employee.findOne({ $or: [{ email }, { aadhar_number: aadhar_id }] });
+        if (existingPatient) {
+            return res.status(400).json({ message: 'Email or Aadhar ID already exists.' });
+        }
+
+        const imageUrl=req.file?.path;
+        // Hash the password
+        let PlainPassword=crypto.randomBytes(8).toString('base64').slice(0, 8);
+        const hashedPassword = await bcrypt.hash(PlainPassword, 10);
+
 
         // Create a new Employee document
         const newEmployee = new Employee({
             name,
             email,
-            password,
-            profile_pic,
+            password: hashedPassword,
+            profile_pic: imageUrl,
             role,
             dept_id,
             phone_number,
-            emergency_phone,
+            emergency_contact:emergency_phone,
             address,
             date_of_birth,
             date_of_joining,
             gender,
-            blood_group,
+            bloodGrp:blood_group,
             salary,
-            aadhar_id,
+            aadhar_number: aadhar_id,
             bank_details
         });
 
         // Save the employee to the database
         const savedEmployee = await newEmployee.save();
+        await sendPasswordEmail(email,PlainPassword,role);
 
         // Assign the employee to the appropriate role schema
         switch (role) {
@@ -210,7 +298,7 @@ export const addStaff = async (req, res) => {
         res.status(201).json({ message: 'Staff added successfully', employee: savedEmployee });
     } catch (error) {
         console.error('Error adding staff:', error);
-        res.status(500).json({ message: 'Failed to add staff', error });
+        res.status(500).json({ message: 'Internal server error.' });
     }
 };
 

@@ -86,6 +86,10 @@ import Feedbacks from "./pages/admin/analytics/Feedbacks";
 
 import PublicData from "./pages/PublicData";
 import AddBill from "./pages/receptionist/AddBill";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
+
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -115,6 +119,10 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage/>} />
           <Route path= "/terms" element={<TermsPage/>} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+
 
          {/* Role-Based Common Pages */}                  
          <Route element={<ProtectedRoute allowedRoles={["doctor", "nurse", "receptionist", "admin", "patient", "pathologist"]} />}>
