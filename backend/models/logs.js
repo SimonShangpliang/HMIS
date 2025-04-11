@@ -30,7 +30,11 @@ const FinanceLogs = new Schema({
     transaction_type: { type: String, enum: ["income", "expense"] },
     amount: Number,
     date: { type: Date, default: Date.now },
-    description: String
+    description: String,
+    allowance: Number,
+    basic_salary: Number,
+    deduction: Number,
+    net_salary: Number
 });
 
 const LoginLog = mongoose.model('LoginLog', LoginLogSchema);

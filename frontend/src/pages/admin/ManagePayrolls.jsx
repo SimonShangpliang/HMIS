@@ -4,7 +4,7 @@ const ManagePayrolls = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  
+
   // Sample data - in a real application, this would come from an API
   const [employees, setEmployees] = useState([
     { id: '12345', name: 'XYZ', lastDate: '26th Feb', selected: false },
@@ -20,7 +20,7 @@ const ManagePayrolls = () => {
   const handleSelectAll = () => {
     const newSelectAll = !selectAll;
     setSelectAll(newSelectAll);
-    
+
     // Update all employees' selected state
     const updatedEmployees = employees.map(emp => ({
       ...emp,
@@ -30,11 +30,11 @@ const ManagePayrolls = () => {
   };
 
   const handleSelectEmployee = (id) => {
-    const updatedEmployees = employees.map(emp => 
+    const updatedEmployees = employees.map(emp =>
       emp.id === id ? { ...emp, selected: !emp.selected } : emp
     );
     setEmployees(updatedEmployees);
-    
+
     // Update selectAll state based on if all employees are selected
     setSelectAll(updatedEmployees.every(emp => emp.selected));
   };
@@ -45,20 +45,39 @@ const ManagePayrolls = () => {
     console.log('Searching for:', searchQuery);
   };
 
-  const handleGeneratePayslip = (id) => {
-    console.log('Update Salary for employee:', id);
-    // In a real application, this would trigger payslip generation
-  };
+  const handleProcessPayroll = async () => {
+    if (selectedEmployees.length === 0) {
+      alert('Please select at least one employee to process payroll.');
+      return;
+    }
 
-  const handleProcessPayroll = (id) => {
-    console.log('Process payroll for employee:', id);
-    // In a real application, this would trigger payroll processing
+    try {
+      const response = await fetch('/admin/process-payroll', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ employeeIds: selectedEmployees }),
+      });
+
+      if (response.ok) {
+        alert('Payroll processed successfully for selected employees.');
+        // Reset selection after processing
+        setEmployees(employees.map(emp => ({ ...emp, selected: false })));
+        setSelectAll(false);
+      } else {
+        alert('Failed to process payroll. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error processing payroll:', error);
+      alert('An error occurred while processing payroll.');
+    }
   };
 
   return (
     <div className="p-6">
       <h2 className="text-2xl font-semibold mb-6">Manage Payrolls</h2>
-      
+
       <div className="max-w-4xl mx-auto">
         {/* Action buttons and search */}
         <div className="flex flex-wrap gap-4 mb-6">
@@ -68,7 +87,7 @@ const ManagePayrolls = () => {
           >
             Select All
           </button>
-          
+
           <form onSubmit={handleSearch} className="flex-grow">
             <input
               type="text"
@@ -78,11 +97,18 @@ const ManagePayrolls = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded bg-gray-100"
             />
           </form>
-          
+
           <button
             className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
           >
             Apply Filters
+          </button>
+
+          <button
+            onClick={handleProcessPayroll}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Process Payroll
           </button>
         </div>
 
@@ -95,7 +121,6 @@ const ManagePayrolls = () => {
                 <th className="py-2 px-4 text-left font-medium">Employee ID</th>
                 <th className="py-2 px-4 text-left font-medium">Emp. Name</th>
                 <th className="py-2 px-4 text-left font-medium">Last Date</th>
-                <th className="py-2 px-4 text-center font-medium" colSpan="2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -112,20 +137,12 @@ const ManagePayrolls = () => {
                   <td className="py-2 px-4">{employee.id}</td>
                   <td className="py-2 px-4">{employee.name}</td>
                   <td className="py-2 px-4">{employee.lastDate}</td>
-                  <td className="py-2 px-1">
+                  <td className="py-2 px-4">
                     <button
-                      onClick={() => handleGeneratePayslip(employee.id)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm w-full"
+                      onClick={() => alert(`Update salary for employee ID: ${employee.id}`)}
+                      className="bg-blue-500 hover:bg-green-600 text-white px-4 py-2 rounded"
                     >
                       Update Salary
-                    </button>
-                  </td>
-                  <td className="py-2 px-1">
-                    <button
-                      onClick={() => handleProcessPayroll(employee.id)}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm w-full"
-                    >
-                      Process Payroll
                     </button>
                   </td>
                 </tr>

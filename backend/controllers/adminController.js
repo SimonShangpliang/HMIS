@@ -7,10 +7,19 @@ import Payroll from '../models/payroll.js';
 import Employee from '../models/employee.js'; // Import Employee model
 import Medicine from '../models/inventory.js'; // Import Medicine model
 import { Doctor, Nurse, Pharmacist, Receptionist, Admin, Pathologist, Driver } from '../models/staff.js'; // Import staff models
+import FinanceLogs from '../models/logs.js'; // Import FinanceLogs model
 
-export const generatePayslip = async (req, res, next) => {
+export const generatePayslip = async (req, res) => {
     try {
-        const { employee_id, basic_salary, allowance, deduction, net_salary, month_year } = req.body;
+        const { employee_id } = req.body;
+
+        // Fetch employee details from the database
+        const employee = await Employee.findById(employee_id);
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+
+        const { salary: basic_salary, allowance, deduction, net_salary, month_year } = employee;
 
         // Create a new PDF document
         const doc = new pdf();
@@ -136,8 +145,11 @@ export const updateInventory = async (req, res) => {
 
 export const addStaff = async (req, res) => {
     try {
-        const { name, email, password, profile_pic, role, dept_id, phone_number, emergency_phone, address, date_of_birth, date_of_joining, gender, blood_group, salary, aadhar_id, bank_details } = req.body;
-
+        const { 
+            name, email, password, profile_pic, role, department_id, phone_number, emergency_phone, address, 
+            date_of_birth, date_of_joining, gender, blood_group, salary, aadhar_id, bank_details, 
+            basic_salary, allowance, deduction 
+        } = req.body;
         // Create a new Employee document
         const newEmployee = new Employee({
             name,
@@ -145,7 +157,7 @@ export const addStaff = async (req, res) => {
             password,
             profile_pic,
             role,
-            dept_id,
+            department_id,
             phone_number,
             emergency_phone,
             address,
@@ -167,7 +179,7 @@ export const addStaff = async (req, res) => {
                 const { specialization, qualification, experience, room_num } = req.body;
                 await Doctor.create({
                     employee_id: savedEmployee._id,
-                    department_id: dept_id,
+                    department_id: department_id,
                     specialization,
                     qualification,
                     experience,
@@ -191,7 +203,7 @@ export const addStaff = async (req, res) => {
                 await Pharmacist.create({ employee_id: savedEmployee._id });
                 break;
             case 'receptionist':
-                await Receptionist.create({ employee_id: savedEmployee._id, assigned_dept: dept_id });
+                await Receptionist.create({ employee_id: savedEmployee._id, assigned_dept: department_id });
                 break;
             case 'admin':
                 await Admin.create({ employee_id: savedEmployee._id });
@@ -207,17 +219,38 @@ export const addStaff = async (req, res) => {
                 return res.status(400).json({ message: 'Invalid role specified' });
         }
 
-        res.status(201).json({ message: 'Staff added successfully', employee: savedEmployee });
-    } catch (error) {
-        console.error('Error adding staff:', error);
-        res.status(500).json({ message: 'Failed to add staff', error });
-    }
-};
+        // Check if a payroll record already exists for the employee
+        let payroll = await Payroll.findOne({ employee_id: savedEmployee._id });
 
+        if (payroll) {
+            // Update the existing payroll record
+            payroll.basic_salary = basic_salary;
+            payroll.allowance = allowance;
+            payroll.deduction = deduction;
+            payroll.net_salary = basic_salary + allowance - deduction;
+            payroll.month_year = new Date();
+        } else {
+            // Create a new payroll record
+            payroll = new Payroll({
+                employee_id: savedEmployee._id,
+                basic_salary,
+                allowance,
+                deduction,
+                net_salary: basic_salary + allowance - deduction, // Calculate net_salary here
+                month_year: new Date()
+            });
+        }
+
+        await payroll.save();
+            } catch (error) {
+                console.error('Error adding staff:', error);
+                res.status(500).json({ message: 'Failed to add staff', error });
+            }
+        };
 
 export const updateSalary = async (req, res) => {
     try {
-        const { employee_id, new_salary } = req.body;
+        const { employee_id, new_salary, basic_salary, allowance, deduction, net_salary } = req.body;
 
         // Find the employee by ID
         const employee = await Employee.findById(employee_id);
@@ -232,9 +265,76 @@ export const updateSalary = async (req, res) => {
         // Save the updated employee
         await employee.save();
 
-        res.status(200).json({ message: 'Salary updated successfully', employee });
+        // Find the payroll record for the employee
+        const payroll = await Payroll.findOne({ employee_id });
+
+        if (!payroll) {
+            return res.status(404).json({ message: 'Payroll record not found for the employee' });
+        }
+
+        // Update the payroll details
+        payroll.basic_salary = basic_salary;
+        payroll.allowance = allowance;
+        payroll.deduction = deduction;
+        payroll.net_salary = net_salary;
+
+        // Save the updated payroll
+        await payroll.save();
+
+        res.status(200).json({ message: 'Salary and payroll updated successfully', employee, payroll });
     } catch (error) {
-        console.error('Error updating salary:', error);
-        res.status(500).json({ message: 'Failed to update salary', error });
+        console.error('Error updating salary and payroll:', error);
+        res.status(500).json({ message: 'Failed to update salary and payroll', error });
     }
 };
+
+
+
+export const processPayroll = async (req, res) => {
+    try {
+        const { employee_ids } = req.body;
+
+        if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
+            return res.status(400).json({ message: 'Invalid employee IDs provided' });
+        }
+
+        for (const employee_id of employee_ids) {
+            // Fetch the payroll details for the employee
+            const payroll = await Payroll.findOne({ employee_id });
+
+            if (!payroll) {
+                console.error(`Payroll not found for employee ID: ${employee_id}`);
+                continue;
+            }
+
+            if (payroll.net_salary <= 0) {
+                console.error(`Net salary is zero or already processed for employee ID: ${employee_id}`);
+                continue;
+            }
+
+            // Generate a finance log
+            const financeLog = new FinanceLogs({
+                user_id: employee_id,
+                transaction_type: "expense",
+                amount: payroll.net_salary,
+                description: `Salary payment for ${new Date(payroll.month_year).toLocaleDateString()}`
+            });
+            await financeLog.save();
+
+            // Generate payslip by calling the generatePayslip function
+            await generatePayslip({ body: { employee_id } }, {});
+
+            // Update the payroll record
+            payroll.net_salary = 0;
+            payroll.payment_status = "paid";
+            payroll.generation_date = new Date();
+            await payroll.save();
+        }
+
+        res.status(200).json({ message: 'Payroll processed successfully' });
+    } catch (error) {
+        console.error('Error processing payroll:', error);
+        res.status(500).json({ message: 'Failed to process payroll', error });
+    }
+};
+
