@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-// Dummy fetch function to simulate fetching bills by consultation ID
-const fetchBillByConsultationId = async (consultationId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const dummyBill = {
-        id: consultationId,
-        totalAmount: 5000,
-        paymentStatus: "Paid",
-        breakdown: [
-          { id: 1, description: "Consultation Fee", amount: 2000 },
-          { id: 2, description: "Lab Tests", amount: 1500 },
-          { id: 3, description: "Medications", amount: 1500 },
-        ],
-      };
-      resolve(dummyBill);
-    }, 500);
-  });
+export const fetchBillByConsultationId = async (consultationId) => {
+  try {
+    const response = await fetch(`http://localhost:5000/api/consultations/${consultationId}/bill`);
+    if (!response.ok) throw new Error("Failed to fetch bill");
+
+    const data = await response.json();
+    return data.bill;
+  } catch (error) {
+    console.error("Fetch bill error:", error);
+    return null;
+  }
 };
 
 const ConsultantBills = () => {
@@ -54,7 +48,7 @@ const ConsultantBills = () => {
         <p className="text-lg">
           <strong>Total Amount:</strong> ₹{bill.totalAmount}
         </p>
-        <p className={`text-lg ${bill.paymentStatus === "Paid" ? "text-green-600" : "text-red-600"}`}>
+        <p className={`text-lg ${bill.paymentStatus === "paid" ? "text-green-600" : "text-red-600"}`}>
           <strong>Payment Status:</strong> {bill.paymentStatus}
         </p>
       </div>
@@ -69,7 +63,7 @@ const ConsultantBills = () => {
           </tr>
         </thead>
         <tbody>
-          {bill.breakdown.map((item, index) => (
+          {bill.breakdown?.map((item, index) => (
             <tr key={item.id} className={`${index % 2 === 0 ? "bg-gray-100" : "bg-white"}`}>
               <td className="py-2 px-4">{item.id}</td>
               <td className="py-2 px-4">{item.description}</td>
@@ -80,12 +74,14 @@ const ConsultantBills = () => {
       </table>
 
       {/* Back Button */}
-      <button
-        onClick={() => navigate(`/patient/previous-consultations/${id}`)}
-        className="mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
-      >
-        Back to Consultation
-      </button>
+      <div className="flex justify-end">
+        <button 
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 mt-6"
+          onClick={() => navigate(`/patient/previous-consultations/${id}`)}
+        >
+          Back to Consultation
+        </button>
+      </div>
     </div>
   );
 };

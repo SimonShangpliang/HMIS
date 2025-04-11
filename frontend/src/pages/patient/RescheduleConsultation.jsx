@@ -1,14 +1,46 @@
 import React, { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import "../../styles/patient/RescheduleConsultation.css";
 
+export const rescheduleConsultation = async (consultationId, newDateTime) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/patients/${consultationId}/reschedule`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ newDateTime }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to reschedule consultation.");
+    }
+
+    return { success: true, consultation: data.consultation };
+  } catch (err) {
+    console.error("Reschedule error:", err);
+    return { success: false, error: err.message };
+  }
+};
+
 const RescheduleConsultation = () => {
+  // states
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedSlot, setSelectedSlot] = useState("");
   const [tempDate, setTempDate] = useState(new Date());
+
+  // inbuilt
+  const { consultationId } = useParams();
   const navigate = useNavigate();
+
+  // Message boards
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // ✅ Confirm modal
+  const [showErrorModal, setShowErrorModal] = useState(false); // ✅ Error modal
+  const [errorMessage, setErrorMessage] = useState(""); // 🆕 To store dynamic error message
 
   const availableSlots = [
     "9:00 AM - 10:00 AM",
@@ -25,27 +57,42 @@ const RescheduleConsultation = () => {
 
   const handleClear = () => {
     setTempDate(new Date());
-    setSelectedSlot(""); // Ensure slot is also cleared
+    setSelectedSlot("");
   };
 
-  const handleReschedule = () => {
+  const handleReschedule = async () => {
     if (!selectedSlot) {
-      alert("Please select a time slot.");
+      setErrorMessage("Please select a time slot before rescheduling.");
+      setShowErrorModal(true);
       return;
     }
-    const confirmReschedule = window.confirm(
-      `Are you sure you want to reschedule to ${selectedDate.toDateString()} at ${selectedSlot}?`
-    );
-    if (confirmReschedule) {
-      alert(`Consultation rescheduled successfully!\nNew Date: ${selectedDate.toDateString()}\nTime: ${selectedSlot}`);
+  
+    // Extract start time from selected slot
+    const [startTime] = selectedSlot.split(" - ");
+    const [time, meridiem] = startTime.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+  
+    if (meridiem === "PM" && hours < 12) hours += 12;
+    if (meridiem === "AM" && hours === 12) hours = 0;
+  
+    const newDateTime = new Date(selectedDate);
+    newDateTime.setHours(hours, minutes, 0, 0);
+  
+    const result = await rescheduleConsultation(consultationId, newDateTime);
+  
+    if (result.success) {
+      alert("Consultation successfully rescheduled!");
       navigate("/patient/booked-consultation");
+    } else {
+      setErrorMessage(result.error); // 🆕 Set backend error message
+      setShowErrorModal(true);
     }
-  };
+  };  
 
-  // Function to grey out dates of other months
-  const getDayClassName = (date) => {
-    const currentMonth = new Date(tempDate).getMonth();
-    return date.getMonth() !== currentMonth ? "grey-out" : "";
+  const confirmReschedule = () => {
+    setShowConfirmModal(false);
+    alert(`Consultation rescheduled successfully!\nNew Date: ${selectedDate.toDateString()}\nTime: ${selectedSlot}`);
+    navigate("/patient/booked-consultation");
   };
 
   return (
@@ -58,7 +105,7 @@ const RescheduleConsultation = () => {
           selected={tempDate}
           onChange={(date) => setTempDate(date)}
           inline
-          calendarClassName="custom-calendar" // Custom class to style the calendar
+          calendarClassName="custom-calendar"
         />
         <div className="calendar-buttons" style={{ display: "flex", justifyContent: "space-between", gap: "10px" }}>
           <button className="apply-button" onClick={handleApply}>Apply</button>
@@ -77,6 +124,42 @@ const RescheduleConsultation = () => {
       </div>
 
       <button onClick={handleReschedule} className="reschedule-button">Reschedule Consultation</button>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Confirm Reschedule</h3>
+            <p>
+              Are you sure you want to reschedule your consultation to <br />
+              <strong>{selectedDate.toDateString()}</strong> at <strong>{selectedSlot}</strong>?
+            </p>
+            <div className="modal-actions">
+              <button className="cancel-modal-btn" onClick={() => setShowConfirmModal(false)}>
+                No, Cancel
+              </button>
+              <button className="confirm-modal-btn" onClick={confirmReschedule}>
+                Yes, Reschedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Error!</h3>
+            <p>{errorMessage}</p>
+            <div className="modal-actions">
+              <button className="confirm-modal-btn" onClick={() => setShowErrorModal(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

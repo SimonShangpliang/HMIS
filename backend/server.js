@@ -21,6 +21,7 @@ import authRoutes from './routes/auth.routes.js';
 import cookieParser from "cookie-parser";
 import publicRoutes from './routes/public.routes.js';
 import commonPageRoutes from './routes/commonPages.routes.js';
+import consultationRoutes from './routes/consultation.routes.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use("/api/tests", testRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/doctors', doctorRoutes);
+app.use('/api/consultations', consultationRoutes);
 app.use('/api/nurses', nurseRoutes);
 app.use('/api/pathologists', pathologistRoutes);
 app.use('/api/pharmaciSst', pharmacistRoutes);

@@ -3,23 +3,65 @@ import { useNavigate } from "react-router-dom";
 import { Home } from "lucide-react";
 import "../../styles/patient/BookedConsultations.css";
 
-const fetchConsultationsByPatientId = async (patientId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const dummyConsultations = [
-        { consultationId: "C001", date: "2025-04-03", doctor: "Dr. Smith", location: "Room 101", details: "Checkup" },
-        { consultationId: "C002", date: "2025-04-05", doctor: "Dr. Adams", location: "Room 203", details: "Follow-up" },
-        { consultationId: "C003", date: "2025-04-07", doctor: "Dr. Williams", location: "Room 305", details: "Diagnosis" },
-        { consultationId: "C004", date: "2025-04-10", doctor: "Dr. Brown", location: "Room 408", details: "Consultation" },
-      ];
-      resolve(dummyConsultations);
-    }, 500);
-  });
+export const fetchConsultationsByPatientId = async (patientId) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/patients/${patientId}/consultations`);
+    const data = await res.json();
+
+    if (!res.ok || !data.consultations) {
+      throw new Error("Failed to fetch consultations");
+    }
+
+    // Get current date (without time) to compare safely
+    const now = new Date();
+
+    // Filter only past consultations (date < now)
+    const futureConsultations = data.consultations.filter((c) => {
+      const consultDate = new Date(c.date); // assumes ISO or YYYY-MM-DD
+      return consultDate >= now;
+    });
+
+    // Sort by ascending date (closest first)
+    futureConsultations.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+
+    return futureConsultations;
+  } catch (err) {
+    console.error("Error fetching consultations:", err);
+    return []; // fallback return
+  }
 };
+
+export const deleteConsultationById = async (consultationId) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/patients/${consultationId}/cancel`, {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || data?.message || "Failed to cancel consultation.");
+    }
+
+    return { success: true, message: data.message };
+  } catch (err) {
+    console.error("Error deleting consultation:", err);
+    return { success: false, message: err.message || "Something went wrong" };
+  }
+};
+
 
 const BookedConsultation = () => {
   const [consultations, setConsultations] = useState([]);
   const [selectedConsultation, setSelectedConsultation] = useState(null);
+  
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelConsultationId, setCancelConsultationId] = useState(null);
+
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
+
   const navigate = useNavigate();
   const patientId = "123";
 
@@ -33,21 +75,36 @@ const BookedConsultation = () => {
   }, [patientId]);
 
   const handleCancel = (consultationId) => {
-    console.log(`Cancelling consultation with ID: ${consultationId}`);
-    alert("Reschedule functionality to be implemented.");
-    setConsultations((prev) => prev.filter((consult) => consult.consultationId !== consultationId));
+    setCancelConsultationId(consultationId);
+    setShowCancelModal(true);
   };
 
   const handleReschedule = (consult) => {
     setSelectedConsultation(consult);
   };
 
-  const confirmReschedule = () => {
-    if (selectedConsultation) {
-      navigate(`/patient/reschedule-consultation/${selectedConsultation.consultationId}`);
-      setSelectedConsultation(null);
+  const confirmCancel = async () => {
+    if (cancelConsultationId) {
+      try {
+        const result = await deleteConsultationById(cancelConsultationId);
+  
+        if (result.success) {
+          setConsultations((prev) => prev.filter((c) => c.id !== cancelConsultationId));
+          setShowCancelModal(false);
+          setCancelConsultationId(null);
+        } else {
+          setShowCancelModal(false);
+          setErrorMessage(result.message);
+          setShowErrorModal(true);
+        }
+      } catch (error) {
+        setShowCancelModal(false);
+        setErrorMessage("Unexpected error while cancelling consultation.");
+        setShowErrorModal(true);
+      }
     }
   };
+  ;
 
   return (
     <div className="consultations-page">
@@ -59,11 +116,11 @@ const BookedConsultation = () => {
         <section className="consultations-list">
           {consultations.length > 0 ? (
             consultations.map((consult) => (
-              <div key={consult.consultationId} className="consultation-card">
+              <div key={consult.id} className="consultation-card">
                 <span className="consult-date">{consult.date}</span>
                 <span className="consult-doctor">{consult.doctor}</span>
                 <span className="consult-location">{consult.location}</span>
-                <button className="cancel-btn" onClick={() => handleCancel(consult.consultationId)}>Cancel</button>
+                <button className="cancel-btn" onClick={() => handleCancel(consult.id)}>Cancel</button>
                 <button className="reschedule-btn" onClick={() => handleReschedule(consult)}>Reschedule</button>
               </div>
             ))
@@ -94,6 +151,40 @@ const BookedConsultation = () => {
           </div>
         </div>
       )}
+      
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Cancel Consultation</h3>
+            <p>Are you sure you want to cancel this consultation?</p>
+            <div className="modal-actions">
+              <button className="cancel-modal-btn" onClick={() => setShowCancelModal(false)}>
+                No, Keep It
+              </button>
+              <button className="confirm-modal-btn" onClick={confirmCancel}>
+                Yes, Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Error</h3>
+            <p>{errorMessage}</p>
+            <div className="modal-actions">
+              <button className="confirm-modal-btn" onClick={() => setShowErrorModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

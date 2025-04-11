@@ -1,33 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-const fetchReportsByConsultationId = async (consultationId) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const dummyReports = [
-        {
-          id: 1,
-          status: "completed",
-          reportText: "Blood Test: Normal levels of all components. Hemoglobin: 13.5 g/dL, WBC: 7500/cmm",
-          createdAt: "2025-04-03",
-          doctorName: "Dr. Smith",
-          location: "Central Hospital"
-        },
-        {
-          id: 2,
-          status: "pending",
-          reportText: "X-Ray results pending from radiology department",
-          createdAt: "2025-04-03",
-          doctorName: "Dr. Johnson", 
-          location: "Radiology Center"
-        }
-      ];
-      resolve(dummyReports);
-    }, 500);
-  });
+// Fetch full consultation (but only use diagnosis in UI)
+export const fetchConsultationById = async (consultationId) => {
+  try {
+    const response = await fetch(`http://localhost:5000/api/consultations/${consultationId}/view`);
+    if (!response.ok) throw new Error("Failed to fetch consultation");
+    const data = await response.json();
+    return data.consultation.reports || [];
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return [];
+  }
 };
 
+
 const ConsultationReports = () => {
+  const [consultation, setConsultation] = useState(null);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -37,7 +26,7 @@ const ConsultationReports = () => {
   useEffect(() => {
     const loadReports = async () => {
       try {
-        const data = await fetchReportsByConsultationId(id);
+        const data = await fetchConsultationById(id);
         setReports(data);
         if (data.length > 0) {
           setSelectedReport(data[0]);
