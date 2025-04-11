@@ -110,7 +110,7 @@ export const getAllPatients = async (req, res) => {
 export const getAllBedInfo = async (req, res) => {
     try {
         // BedLog.
-        const bedLogs = await BedLog.BedLog.find().populate('bed_id').populate('patient_id');
+        const bedLogs = await BedLog.BedLog.find().populate('bed_number').populate('patient_id');
         res.status(200).json(bedLogs);
     } catch (error) {
         console.error('Error fetching bed information:', error);
@@ -122,11 +122,11 @@ export const getAllBedInfo = async (req, res) => {
 // Controller for bed assignment
 export const assignBed = async (req, res) => {
     try {
-        const { patient_id, bed_id, bed_type } = req.body;
+        const { patient_id, bed_number, bed_type } = req.body;
 
         // Validate required fields
-        if (!patient_id || !bed_id || !bed_type) {
-            return res.status(400).json({ message: 'Patient ID, Bed ID, and Bed Type are required fields' });
+        if (!patient_id || !bed_number || !bed_type) {
+            return res.status(400).json({ message: 'Patient ID, Bed Number, and Bed Type are required fields' });
         }
 
         // Check if patient exists
@@ -137,7 +137,7 @@ export const assignBed = async (req, res) => {
 
         // Check if bed is already occupied
         const existingAssignment = await BedLog.BedLog.findOne({
-            bed_id: bed_id,
+            bed_number: bed_number,
             status: "occupied"
         });
 
@@ -148,7 +148,7 @@ export const assignBed = async (req, res) => {
         // Create new bed assignment
         const newAssignment = new BedLog.BedLog({
             patient_id,
-            bed_id,
+            bed_number,
             bed_type,
             status: "occupied",
             time: new Date()
