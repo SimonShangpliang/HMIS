@@ -3,6 +3,7 @@ import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { MdEmail } from 'react-icons/md';
 import { BsTelephone } from 'react-icons/bs';
 import { IoLocationOutline } from 'react-icons/io5';
+import '../styles/Additional.css';
 
 const TrendsPage = () => {
   return (
@@ -45,7 +46,7 @@ const TrendsPage = () => {
 
       <section className="trends-grid">
         <div className="trend-card">
-          <img src="/trends/telemedicine.png" alt="Telemedicine Expansion" />
+          <img src="/trends/telemedicine.jpeg" alt="Telemedicine Expansion" />
           <div className="trend-content">
             <span className="tag">Telehealth</span>
             <h3>Telemedicine: Beyond the Pandemic</h3>
@@ -55,7 +56,7 @@ const TrendsPage = () => {
         </div>
 
         <div className="trend-card">
-          <img src="/trends/data-security.png" alt="Data Security" />
+          <img src="/trends/data-security.webp" alt="Data Security" />
           <div className="trend-content">
             <span className="tag">Security</span>
             <h3>Advanced Data Protection in Healthcare</h3>
@@ -65,7 +66,7 @@ const TrendsPage = () => {
         </div>
 
         <div className="trend-card">
-          <img src="/trends/interoperability.png" alt="Interoperability" />
+          <img src="/trends/interoperability.jpg" alt="Interoperability" />
           <div className="trend-content">
             <span className="tag">Integration</span>
             <h3>The Interoperability Revolution</h3>
@@ -75,7 +76,7 @@ const TrendsPage = () => {
         </div>
 
         <div className="trend-card">
-          <img src="/trends/precision-medicine.png" alt="Precision Medicine" />
+          <img src="/trends/precision-medicine.jpeg" alt="Precision Medicine" />
           <div className="trend-content">
             <span className="tag">Treatment</span>
             <h3>Precision Medicine and HMIS</h3>
@@ -85,7 +86,7 @@ const TrendsPage = () => {
         </div>
 
         <div className="trend-card">
-          <img src="/trends/remote-monitoring.png" alt="Remote Monitoring" />
+          <img src="/trends/remote-monitoring.webp" alt="Remote Monitoring" />
           <div className="trend-content">
             <span className="tag">Monitoring</span>
             <h3>Remote Patient Monitoring Advancements</h3>

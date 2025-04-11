@@ -3,6 +3,7 @@ import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { MdEmail } from 'react-icons/md';
 import { BsTelephone } from 'react-icons/bs';
 import { IoLocationOutline } from 'react-icons/io5';
+import '../styles/AboutPage.css';
 
 const AboutPage = () => {
   return (
@@ -97,28 +98,28 @@ const AboutPage = () => {
         <h2>Our Leadership Team</h2>
         <div className="team-grid">
           <div className="team-member">
-            <img src="/team/ceo.png" alt="Dr. Michael Chen" />
-            <h3>Dr. Michael Chen</h3>
+            <img src="/team/ceo.png" alt="Dr. PK Das" />
+            <h3>Dr. PK Das</h3>
             <p className="title">Chief Executive Officer</p>
             <p className="bio">Former hospital administrator with 20+ years of healthcare experience and a vision for technology-enabled care.</p>
           </div>
 
           <div className="team-member">
-            <img src="/team/cto.png" alt="Sarah Williams" />
+            <img src="/team/cto.jpeg" alt="Sarah Williams" />
             <h3>Sarah Williams</h3>
             <p className="title">Chief Technology Officer</p>
             <p className="bio">Healthcare IT pioneer with expertise in secure systems architecture and interoperability solutions.</p>
           </div>
 
           <div className="team-member">
-            <img src="/team/cmo.png" alt="Dr. James Peterson" />
+            <img src="/team/cmo.jpeg" alt="Dr. James Peterson" />
             <h3>Dr. James Peterson</h3>
             <p className="title">Chief Medical Officer</p>
             <p className="bio">Practicing physician focused on ensuring HMIS meets real clinical needs and improves patient outcomes.</p>
           </div>
 
           <div className="team-member">
-            <img src="/team/cpo.png" alt="Rachel Garcia" />
+            <img src="/team/cpo.jpeg" alt="Rachel Garcia" />
             <h3>Rachel Garcia</h3>
             <p className="title">Chief Product Officer</p>
             <p className="bio">User experience expert dedicated to creating intuitive healthcare interfaces that reduce cognitive burden.</p>

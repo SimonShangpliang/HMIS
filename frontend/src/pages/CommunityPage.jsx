@@ -3,6 +3,7 @@ import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { MdEmail } from 'react-icons/md';
 import { BsTelephone } from 'react-icons/bs';
 import { IoLocationOutline } from 'react-icons/io5';
+import '../styles/Additional.css';
 
 const CommunityPage = () => {
   return (
@@ -60,9 +61,9 @@ const CommunityPage = () => {
           <div className="testimonial-card">
             <div className="quote">"HMIS has transformed the way our hospital operates. The community support has been invaluable in optimizing our workflows."</div>
             <div className="author">
-              <img src="/testimonials/user1.png" alt="Dr. Sarah Johnson" />
+              <img src="/testimonials/user1.png" alt="Dr. PK Das" />
               <div>
-                <h4>Dr. Sarah Johnson</h4>
+                <h4>Dr. PK Das</h4>
                 <p>Chief Medical Officer, City General Hospital</p>
               </div>
             </div>
@@ -71,7 +72,7 @@ const CommunityPage = () => {
           <div className="testimonial-card">
             <div className="quote">"The HMIS community forums helped us solve implementation challenges quickly. The knowledge sharing is phenomenal."</div>
             <div className="author">
-              <img src="/testimonials/user2.png" alt="Mark Chen" />
+              <img src="/testimonials/user2.jpg" alt="Mark Chen" />
               <div>
                 <h4>Mark Chen</h4>
                 <p>IT Director, Regional Medical Center</p>
@@ -80,9 +81,9 @@ const CommunityPage = () => {
           </div>
 
           <div className="testimonial-card">
-            <div className="quote">"Being part of the HMIS community has connected us with like-minded professionals who share our commitment to improving patient care."</div>
+            <div className="quote">"Being part of the HMIS community connects us with dedicated professionals equally committed to delivering better patient care."</div>
             <div className="author">
-              <img src="/testimonials/user3.png" alt="Dr. Elena Rodriguez" />
+              <img src="/testimonials/user3.webp" alt="Dr. Elena Rodriguez" />
               <div>
                 <h4>Dr. Elena Rodriguez</h4>
                 <p>Head of Pediatrics, Children's Hospital</p>
