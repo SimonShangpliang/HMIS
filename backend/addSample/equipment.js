@@ -1,6 +1,6 @@
 import express from 'express';
 import Equipment from '../models/equipment.js';
-import Department from '../models/department.js'; // Assuming you have a Department model
+import {Department} from '../models/department.js'; // Assuming you have a Department model
 
 const router = express.Router();
 

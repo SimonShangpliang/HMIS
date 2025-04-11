@@ -1,5 +1,5 @@
 import express from 'express';
-import Department from '../models/department.js';
+import {Lab,Department} from '../models/department.js';
 import { faker } from '@faker-js/faker';
 
 const router = express.Router();
@@ -25,8 +25,12 @@ router.post('/', async (req, res) => {
   }
 });
 
+function generateLab(){
+  
+}
+
 // Generate a random department with labs
-function generateDepartment() {
+async function generateDepartment() {
   // Department names by specialties
   const departmentNames = [
     "Cardiology", "Neurology", "Orthopedics", "Pediatrics", 
@@ -57,6 +61,11 @@ function generateDepartment() {
     });
   }
 
+  for (const lab of labs) {
+    const newLab = new Lab(lab);
+    await newLab.save();
+  }
+
   return {
     dept_id: deptId,
     dept_name: departmentNames[Math.floor(Math.random() * departmentNames.length)],
@@ -71,7 +80,7 @@ router.post('/generate/:count', async (req, res) => {
     const departments = [];
 
     for (let i = 0; i < count; i++) {
-      const department = new Department(generateDepartment());
+      const department = new Department(await generateDepartment());
       const savedDepartment = await department.save();
       departments.push(savedDepartment);
     }

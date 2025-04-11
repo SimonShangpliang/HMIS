@@ -1,7 +1,7 @@
 import express from 'express';
-import { Consultation, Prescription, Feedback } from '../models/consultation.js';
+import { Consultation, Prescription, Report } from '../models/consultation.js';
 import Patient from '../models/patient.js'; // Assuming you have a Patient model
-import { Doctor } from '../models/staff.js'; // From your previous code
+import { Doctor, Receptionist } from '../models/staff.js'; // From your previous code
 import Medicine from '../models/inventory.js'; // Assuming you have a Medicine model
 import Diagnosis from '../models/diagnosis.js'; // Assuming you have a Diagnosis model
 
@@ -15,6 +15,8 @@ router.post('/generate', async (req, res) => {
     const doctors = await getDoctors();
     const medicines = await getMedicines();
     const diagnoses = await getDiagnoses();
+    const receptionists = await getReceptionists()
+    console.log(receptionists)
     
     // Check if we have the necessary data
     if (patients.length === 0 || doctors.length === 0) {
@@ -31,12 +33,11 @@ router.post('/generate', async (req, res) => {
     
     // Add dummy data
     const prescriptions = await addDummyPrescriptions(medicines);
-    const consultations = await addDummyConsultations(patients, doctors, prescriptions, diagnoses);
+    const consultations = await addDummyConsultations(patients, doctors, receptionists, prescriptions, diagnoses);
     
     res.status(200).json({
       message: 'Dummy consultation data added successfully',
       counts: {
-        prescriptions: prescriptions.length,
         consultations: consultations.length
       }
     });
@@ -53,6 +54,14 @@ router.post('/generate', async (req, res) => {
 async function getPatients() {
   try {
     return await Patient.find({});
+  } catch (error) {
+    console.error('Error fetching patients:', error);
+    return [];
+  }
+}
+async function getReceptionists() {
+  try {
+    return await Receptionist.find({});
   } catch (error) {
     console.error('Error fetching patients:', error);
     return [];
@@ -182,12 +191,13 @@ async function addDummyPrescriptions(medicines) {
       entries: entries
     });
   }
-  
+  // Delete existing prescriptions before adding new ones
+  await Prescription.deleteMany({});
   return await Prescription.create(prescriptionData);
 }
 
 // Helper function to add dummy consultations
-async function addDummyConsultations(patients, doctors, prescriptions, diagnoses) {
+async function addDummyConsultations(patients, doctors, receptionists, prescriptions, diagnoses) {
   // Clear existing consultations
   await Consultation.deleteMany({});
   
@@ -238,6 +248,7 @@ async function addDummyConsultations(patients, doctors, prescriptions, diagnoses
     // Select a random patient and doctor
     const patient = patients[Math.floor(Math.random() * patients.length)];
     const doctor = doctors[Math.floor(Math.random() * doctors.length)];
+    const receptionist = receptionists[Math.floor(Math.random() * doctors.length)];
     
     // Generate random dates
     // Booked date: random date within last 3 months to next 1 month
@@ -300,7 +311,7 @@ async function addDummyConsultations(patients, doctors, prescriptions, diagnoses
               status: status,
               title: title,
               description: `${title} for ${patient.name || 'patient'}`,
-              createdBy: doctor._id,
+              createdBy: receptionist._id,
               createdAt: new Date(actualStartDate),
               updatedAt: new Date(actualStartDate)
             };
@@ -383,6 +394,104 @@ router.get('/', async (req, res) => {
       message: 'Error fetching consultations data', 
       error: error.message 
     });
+  }
+});
+
+router.post('/update/all', async (req, res) => {
+  try {
+    const consultations = await Consultation.find({});
+    const diagnosis = await Diagnosis.find({});
+    const prescriptions = await Prescription.find({});
+    const reports = await Report.find({});
+    for (let i = 0; i < consultations.length; i++) {
+      const consultation = consultations[i];
+      const prescriptionArr = [];
+      const reportArr = [];
+      const diagnosisArr = [];
+      // console.log(diagnosis)
+      // Add random prescription
+      const prescriptionCount = Math.floor(Math.random() * 3);
+      for (let j = 0; j < prescriptionCount; j++) {
+        const randomPrescription = prescriptions[Math.floor(Math.random() * prescriptions.length)];
+        prescriptionArr.push(randomPrescription._id);
+      }
+      // // Add random report
+      const reportCount = Math.floor(Math.random() * 3);
+      for (let j = 0; j < reportCount; j++) {
+        const randomReport = reports[Math.floor(Math.random() * reports.length)];
+        reportArr.push(randomReport);
+      }
+      // // Add random diagnosis
+      const diagnosisCount = 1+Math.floor(Math.random() * 3);
+      for (let j = 0; j < diagnosisCount; j++) {
+        const randomDiagnosis = diagnosis[Math.floor(Math.random() * diagnosis.length)];
+        console.log(randomDiagnosis.diagnosis_id)
+        diagnosisArr.push(randomDiagnosis.diagnosis_id);
+      }
+      
+      // // Update the consultation with new data
+      consultation.prescription = prescriptionArr;
+      consultation.reports = reportArr;
+      consultation.diagnosis = diagnosisArr;
+
+      // Save the updated consultation
+      await consultation.save();
+    } 
+    res.status(200).json({ 
+      message: 'Consultations updated successfully', 
+      consultations: consultations 
+    }); 
+  } catch (error) {
+    console.error('Error updating consultations:', error);
+    res.status(500).json({ 
+      message: 'Error updating consultations', 
+      error: error.message 
+    });
+  }
+});
+
+
+router.post('/reports/generate', async (req, res) => {
+  try {
+    const consultations = await Consultation.find({});
+    const receptionists = await Receptionist.find({});
+    const reportTitles = [
+      "Blood Test", "X-Ray", "MRI", "CT Scan", "Ultrasound", 
+      "ECG", "Urine Analysis", "Stool Analysis", "Biopsy"
+    ];
+    const reportData = [];
+
+    for (let i = 0; i < consultations.length; i++) {
+      const consultation = consultations[i];
+      const reportCount = Math.floor(Math.random() * 3) + 1; // Generate 1-3 reports per consultation
+
+      for (let j = 0; j < reportCount; j++) {
+      const title = reportTitles[Math.floor(Math.random() * reportTitles.length)];
+      const status = Math.random() < 0.7 ? "completed" : "pending";
+      const receptionist = receptionists[Math.floor(Math.random() * receptionists.length)];
+
+      const report = {
+        status: status,
+        title: title,
+        description: `${title} for consultation ID ${consultation._id}`,
+        createdBy: receptionist._id,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      if (status === "completed") {
+        report.reportText = `Normal ${title.toLowerCase()} results. No significant findings.`;
+      }
+
+      reportData.push(report);
+      }
+    }
+
+    const report = await Report.insertMany(reportData);
+    res.status(200).json({ report });
+  } catch (error) {
+    console.error('Error fetching report:', error);
+    res.status(500).json({ message: 'Error fetching report', error: error.message });
   }
 });
 

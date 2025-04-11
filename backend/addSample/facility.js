@@ -1,6 +1,8 @@
 import express from 'express';
 import { Ambulance, Room, Bed, DailyOccupancy } from '../models/facility.js';
 import { faker } from '@faker-js/faker';
+import { Nurse } from '../models/staff.js';
+import Patient from '../models/patient.js';
 
 const router = express.Router();
 
@@ -258,6 +260,40 @@ router.post('/beds', async (req, res) => {
     const bed = new Bed(req.body);
     const savedBed = await bed.save();
     res.status(201).json(savedBed);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+//POST generate a bed
+router.post('/beds/generate/:count', async (req, res) => {
+  try {
+    const count = parseInt(req.params.count) || 5;
+    const beds = [];
+
+    var nurses = await Nurse.find({});
+    var patients = await Patient.find({});
+
+    for (let i = 0; i < count; i++) {
+      const status = faker.helpers.arrayElement(['occupied', 'vacant']);
+      const nurse = nurses.length > 0 ? faker.helpers.arrayElement(nurses) : null;
+      const patient = status === 'occupied' && patients.length > 0 ? faker.helpers.arrayElement(patients) : null;
+
+      const bed = new Bed({
+      bed_number: faker.number.int({ min: 1, max: 1000 }),
+      nurse_id: nurse ? nurse._id : null,
+      status: status,
+      patient_id: patient ? patient._id : null
+      });
+
+      const savedBed = await bed.save();
+      beds.push(savedBed);
+    }
+
+    res.status(201).json({
+      message: `Successfully generated ${beds.length} beds`,
+      count: beds.length
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

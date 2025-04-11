@@ -70,4 +70,5 @@ PrescriptionSchema.plugin(AutoIncrement, { inc_field: '_id',id: 'prescription_id
 const Prescription = mongoose.model('Prescription', PrescriptionSchema);
 const Consultation = mongoose.model('Consultation', ConsultationSchema);
 const Feedback = mongoose.model('Feedback', FeedbackSchema);
-export {Consultation, Prescription,Feedback};
+const Report = mongoose.model('Report', ReportSchema);
+export {Consultation, Prescription,Feedback,Report};

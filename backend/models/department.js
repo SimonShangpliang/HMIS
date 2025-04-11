@@ -11,5 +11,6 @@ const DepartmentSchema = new Schema({
   labs: [LabSchema] // Embedded array of labs
 }, { timestamps: true });
 
+const Lab = mongoose.model('Lab', LabSchema); 
 const Department = mongoose.model('Department', DepartmentSchema);
-export default Department;
+export {Lab, Department};

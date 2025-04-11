@@ -1,7 +1,7 @@
 import express from 'express';
 import { Doctor, Nurse, Pharmacist, Receptionist, Admin, Pathologist, Driver } from '../models/staff.js';
 import Employee from '../models/employee.js'; // Assuming you have an Employee model
-import Department from '../models/department.js'; // Assuming you have a Department model
+import {Lab, Department} from '../models/department.js'; // Assuming you have a Department model
 import {Room} from '../models/facility.js'; // Assuming you have a Room model
 import {Bed} from '../models/facility.js'; // Assuming you have a Bed model
 import {Ambulance} from '../models/facility.js'; // Assuming you have an Ambulance model
@@ -59,122 +59,64 @@ router.post('/generate', async (req, res) => {
 
 // Helper function to add dummy departments
 async function addDummyDepartments() {
-  const departmentData = [
-    { _id: 'CARDIO', name: 'Cardiology', description: 'Heart related treatments' },
-    { _id: 'NEURO', name: 'Neurology', description: 'Brain and nervous system' },
-    { _id: 'ORTHO', name: 'Orthopedics', description: 'Bone and joint treatments' },
-    { _id: 'DERM', name: 'Dermatology', description: 'Skin related treatments' },
-    { _id: 'ENT', name: 'Ear, Nose, and Throat', description: 'ENT treatments' }
-  ];
-  
-  await Department.deleteMany({}); // Clear existing data
-  return await Department.insertMany(departmentData);
+  var departments = await Department.find({});
+  if (departments.length > 0) {
+    return departments;
+  }
+  console.log("No departments found. Please add departments first.");
+  return null;
 }
 
 // Helper function to add dummy rooms
 async function addDummyRooms() {
-  const roomData = [];
-  
-  // Generate 20 rooms
-  for (let i = 1; i <= 20; i++) {
-    roomData.push({
-      room_number: i,
-      floor: Math.ceil(i / 5),
-      type: i % 3 === 0 ? 'private' : (i % 3 === 1 ? 'semi-private' : 'general'),
-      capacity: i % 3 === 0 ? 1 : (i % 3 === 1 ? 2 : 4),
-      status: i % 5 === 0 ? 'maintenance' : 'available'
-    });
+  var rooms = await Room.find({}).lean();
+  if (rooms.length > 0) {
+    return rooms;
   }
-  
-  await Room.deleteMany({}); // Clear existing data
-  return await Room.insertMany(roomData);
+  console.log("No room found. Please add room first.");
+  return null;
 }
 
 // Helper function to add dummy beds
 async function addDummyBeds(rooms) {
-  const bedData = [];
-  
-  // Generate beds for each room based on capacity
-  for (const room of rooms) {
-    for (let i = 1; i <= room.capacity; i++) {
-      bedData.push({
-        bed_number: i,
-        room: room._id,
-        status: i % 4 === 0 ? 'maintenance' : 'available',
-        type: i % 2 === 0 ? 'standard' : 'electric'
-      });
-    }
+  var beds = await Bed.find({}).lean();
+  if (beds.length > 0) {
+    return beds;
   }
   
-  await Bed.deleteMany({}); // Clear existing data
-  return await Bed.insertMany(bedData);
+  console.log("No bed found. Please add bed first.");
+  return null;
 }
 
 // Helper function to add dummy ambulances
 async function addDummyAmbulances() {
-  const ambulanceData = [];
-  
-  // Generate 5 ambulances
-  for (let i = 1; i <= 5; i++) {
-    ambulanceData.push({
-      registration_number: `AMB-${1000 + i}`,
-      type: i % 2 === 0 ? 'basic' : 'advanced',
-      capacity: i % 2 === 0 ? 2 : 3,
-      status: i === 5 ? 'maintenance' : 'available'
-    });
+  var ambulances = await Ambulance.find({}).lean();
+  if (ambulances.length > 0) {
+    return ambulances;
   }
-  
-  await Ambulance.deleteMany({}); // Clear existing data
-  return await Ambulance.insertMany(ambulanceData);
+  console.log("No amb found. Please add amb first.");
+  return null;
 }
 
 // Helper function to add dummy laboratories
 async function addDummyLabs() {
-  const labData = [
-    { name: 'Biochemistry Lab', type: 'biochemistry', status: 'active' },
-    { name: 'Hematology Lab', type: 'hematology', status: 'active' },
-    { name: 'Microbiology Lab', type: 'microbiology', status: 'active' },
-    { name: 'Pathology Lab', type: 'pathology', status: 'maintenance' }
-  ];
-  
-  await Lab.deleteMany({}); // Clear existing data
-  return await Lab.insertMany(labData);
+  var labs = await Lab.find({}).lean();
+  if (labs.length > 0) {
+    return labs;
+  }
+  console.log("No lab found. Please add lab first.");
+  return null;
 }
 
 // Helper function to add dummy employees (base data for all staff)
 async function addDummyEmployees() {
-  const employeeData = [];
-  const roles = ['doctor', 'nurse', 'pharmacist', 'receptionist', 'admin', 'pathologist', 'driver'];
-  const names = [
-    'John Smith', 'Sarah Johnson', 'Michael Brown', 'Emily Davis', 'David Wilson',
-    'Emma Taylor', 'James Miller', 'Olivia Anderson', 'Robert Thomas', 'Sophia Jackson',
-    'William White', 'Ava Harris', 'Joseph Martin', 'Isabella Thompson', 'Charles Garcia',
-    'Mia Martinez', 'Daniel Robinson', 'Charlotte Clark', 'Matthew Rodriguez', 'Amelia Lewis',
-    'Andrew Lee', 'Abigail Walker', 'Joshua Hall', 'Elizabeth Young', 'Christopher Allen'
-  ];
-  
-  // Generate 25 employees with different roles
-  for (let i = 0; i < names.length; i++) {
-    const nameParts = names[i].split(' ');
-    const role = roles[i % roles.length];
-    
-    employeeData.push({
-      name: names[i],
-      employee_id: 1000 + i, // Auto-increment starting from 1000
-      email: `${nameParts[0].toLowerCase()}.${nameParts[1].toLowerCase()}@hospital.com`,
-      phone: `555-${100 + i}-${1000 + i}`,
-      gender: i % 2 === 0 ? 'male' : 'female',
-      address: `${1000 + i} Healthcare Ave, Medical City`,
-      date_of_birth: new Date(1970 + Math.floor(i/2), i % 12, (i % 28) + 1),
-      joining_date: new Date(2020, i % 12, (i % 28) + 1),
-      role: role,
-      salary: 50000 + (i * 1000),
-      status: i % 10 === 0 ? 'on leave' : 'active'
-    });
+  var employees = await Employee.find({}).lean();
+  if (employees.length > 0) {
+    return employees;
   }
   
-  await Employee.deleteMany({}); // Clear existing data
-  return await Employee.insertMany(employeeData);
+  console.log("No emp found. Please add emp first.");
+  return null;
 }
 
 // Helper function to add dummy doctors
@@ -188,7 +130,7 @@ async function addDummyDoctors(employees, departments) {
     const deptIndex = i % departments.length;
     
     doctorData.push({
-      employee_id: doctorEmployees[i].employee_id,
+      employee_id: doctorEmployees[i]._id,
       department_id: departments[deptIndex]._id,
       specialization: specializations[i % specializations.length],
       qualification: qualifications[i % qualifications.length],
@@ -198,7 +140,7 @@ async function addDummyDoctors(employees, departments) {
       num_ratings: 10 + (i * 5)
     });
   }
-  
+  console.log(doctorData);
   await Doctor.deleteMany({}); // Clear existing data
   return await Doctor.create(doctorData);
 }
@@ -216,7 +158,7 @@ async function addDummyNurses(employees, departments, rooms, beds, ambulances) {
     const ambIndex = i % ambulances.length;
     
     nurseData.push({
-      employee_id: nurseEmployees[i].employee_id,
+      employee_id: nurseEmployees[i]._id,
       assigned_dept: departments[deptIndex]._id,
       location: locations[i % locations.length],
       assigned_room: i % 3 === 0 ? rooms[roomIndex]._id : null,
@@ -236,7 +178,7 @@ async function addDummyPharmacists(employees) {
   
   for (const employee of pharmacistEmployees) {
     pharmacistData.push({
-      employee_id: employee.employee_id
+      employee_id: employee._id
     });
   }
   
@@ -253,7 +195,7 @@ async function addDummyReceptionists(employees, departments) {
     const deptIndex = i % departments.length;
     
     receptionistData.push({
-      employee_id: receptionistEmployees[i].employee_id,
+      employee_id: receptionistEmployees[i]._id,
       assigned_dept: departments[deptIndex]._id
     });
   }
@@ -269,7 +211,7 @@ async function addDummyAdmins(employees) {
   
   for (const employee of adminEmployees) {
     adminData.push({
-      employee_id: employee.employee_id
+      employee_id: employee._id
     });
   }
   
@@ -286,7 +228,7 @@ async function addDummyPathologists(employees, labs) {
     const labIndex = i % labs.length;
     
     pathologistData.push({
-      employee_id: pathologistEmployees[i].employee_id,
+      employee_id: pathologistEmployees[i]._id,
       lab_id: labs[labIndex]._id
     });
   }
@@ -302,7 +244,7 @@ async function addDummyDrivers(employees) {
   
   for (const employee of driverEmployees) {
     driverData.push({
-      employee_id: employee.employee_id
+      employee_id: employee._id
     });
   }
   
