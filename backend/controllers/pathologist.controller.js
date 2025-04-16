@@ -1,5 +1,5 @@
 import Equipment from "../models/equipment.js";
-import { Consultation } from "../models/consultation.js";
+import { Consultation, Report } from "../models/consultation.js";
 import Patient from "../models/patient.js";
 
 export const searchEquipment = async (req, res) => {
@@ -205,6 +205,65 @@ export const uploadTestResults = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in uploadTestResults:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Upload a standalone report for a patient
+export const uploadStandaloneReport = async (req, res) => {
+  try {
+    const { patientId, reportTitle, description } = req.body;
+    // Basic validation
+    if (!patientId || !reportTitle) {
+      return res.status(400).json({
+        message: "Patient ID and report title are required.",
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Report file is required." });
+    }
+
+    // Verify patient exists
+    const patient = await Patient.findOne({ _id: Number(patientId) });
+
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found." });
+    }
+
+    // Create a new report document
+    const report = new Report({
+      status: "completed",
+      reportText: req.file.path,
+      title: reportTitle,
+      description: description || "",
+      // createdBy: req.user._id, // Assuming authenticated user's ID is available
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    // Save the report first
+    await report.save();
+
+    // Create a consultation to hold the report reference
+    const consultation = new Consultation({
+      patient_id: patientId,
+      status: "completed",
+      appointment_type: "consultation",
+      actual_start_datetime: new Date(),
+      reports: [report], // Add the saved report
+    });
+
+    // Save the consultation
+    await consultation.save();
+
+    res.status(201).json({
+      message: "Report uploaded successfully.",
+      report,
+      consultationId: consultation._id,
+    });
+  } catch (error) {
+    console.error("Error in uploadStandaloneReport:", error);
     res.status(500).json({ message: error.message });
   }
 };

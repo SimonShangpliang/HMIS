@@ -6,6 +6,7 @@ import {
   searchPatientInfoAndTest,
   getPatientPendingTests,
   uploadTestResults,
+  uploadStandaloneReport,
 } from "../controllers/pathologist.controller.js";
 
 const router = express.Router();
@@ -56,8 +57,13 @@ router.get("/searchById", searchPatientInfoAndTest);
 router.get("/pendingTests/:patientId", getPatientPendingTests);
 router.post(
   "/uploadTestResults",
-  upload.single("testResultFile"),
+  upload.single("reportFile"),
   uploadTestResults
+);
+router.post(
+  "/uploadStandaloneReport",
+  upload.single("reportFile"),
+  uploadStandaloneReport
 );
 
 export default router;

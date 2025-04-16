@@ -621,3 +621,62 @@ export const uploadProfilePhoto = async (req, res) => {
 };
 
 
+// Controller function to update the patient profile
+export const updatePatientProfile = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const {
+      name,
+      phone_number,
+      emergency_contact,
+      gender,
+      email,
+      address,
+      date_of_birth,
+      weight,
+      height,
+      bloodGrp,
+      bedNo,
+      roomNo
+    } = req.body;
+
+    // Find the patient by patientId (Auto-Incremented _id)
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: 'Patient not found' });
+    }
+
+    // Update the patient's profile with the provided data
+    patient.name = name || patient.name;
+    patient.phone_number = phone_number || patient.phone_number;
+    patient.emergency_contact = emergency_contact || patient.emergency_contact;
+    patient.email = email || patient.email;
+    patient.address = address || patient.address;
+    patient.gender = gender || patient.gender;
+    // Validate date_of_birth
+    if (date_of_birth) {
+      const dob = new Date(date_of_birth);
+      const now = new Date();
+      if (dob > now) {
+        return res.status(400).json({ message: "Date of birth cannot be in the future." });
+      }
+      patient.date_of_birth = dob;
+    }
+
+
+    patient.patient_info.height = height || patient.patient_info.height;
+    patient.patient_info.weight = weight || patient.patient_info.weight;
+    patient.patient_info.bloodGrp = bloodGrp || patient.patient_info.bloodGrp;
+    patient.patient_info.bedNo = bedNo || patient.patient_info.bedNo;
+    patient.patient_info.roomNo = roomNo || patient.patient_info.roomNo;
+
+    // Save the updated patient data
+    await patient.save();
+
+    // Respond with the updated patient data
+    res.status(200).json({ message: 'Profile updated successfully', patient });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

@@ -11,6 +11,10 @@ const AddReport = () => {
   const [patientData, setPatientData] = useState(null);
   const [availableTests, setAvailableTests] = useState([]);
   const [consultationId, setConsultationId] = useState(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [reportTitle, setReportTitle] = useState('');
+  const [reportType, setReportType] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
 
   const searchPatient = async () => {
     if (!patientId) return;
@@ -45,9 +49,18 @@ const AddReport = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedFile || !selectedTest || !patientId || !consultationId) {
-      console.log(selectedFile, selectedTest, patientId, consultationId);
+    if (!selectedFile || !patientId) {
       setError('Please fill all required fields');
+      return;
+    }
+
+    if (!isStandalone && (!selectedTest || !consultationId)) {
+      setError('Please select a test');
+      return;
+    }
+
+    if (isStandalone && (!reportTitle || !reportType)) {
+      setError('Please fill report title and type');
       return;
     }
 
@@ -56,19 +69,27 @@ const AddReport = () => {
 
     try {
       const formData = new FormData();
-      formData.append('testResultFile', selectedFile);
+      formData.append('reportFile', selectedFile);
       formData.append('patientId', patientId);
-      formData.append('testId', selectedTest);
-      formData.append('consultationId', consultationId);
 
-      const response = await axios.post('http://localhost:5000/api/pathologists/uploadTestResults',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+      let url = 'http://localhost:5000/api/pathologists/';
+
+      if (isStandalone) {
+        url += 'uploadStandaloneReport';
+        formData.append('reportTitle', reportTitle);
+        formData.append('reportType', reportType);
+        formData.append('description', reportDescription);
+      } else {
+        url += 'uploadTestResults';
+        formData.append('testId', selectedTest);
+        formData.append('consultationId', consultationId);
+      }
+
+      const response = await axios.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-      );
+      });
 
       alert('Test results uploaded successfully!');
 
@@ -76,8 +97,11 @@ const AddReport = () => {
       setSelectedTest('');
       setSelectedFile(null);
       setFileName('');
-      // Refresh available tests
-      searchPatient();
+      setReportTitle('');
+      setReportType('');
+      if (!isStandalone) {
+        searchPatient();
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message);
     } finally {
@@ -95,6 +119,26 @@ const AddReport = () => {
   return (
     <div className="p-8 bg-white h-full">
       <form onSubmit={handleSubmit} className="max-w-md mx-auto">
+        {/* Report Type Toggle */}
+        <div className="mb-8">
+          <div className="flex justify-center space-x-4">
+            <button
+              type="button"
+              onClick={() => setIsStandalone(false)}
+              className={`px-4 py-2 rounded-md ${!isStandalone ? 'bg-teal-600 text-white' : 'bg-gray-200'}`}
+            >
+              Consultation Based
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsStandalone(true)}
+              className={`px-4 py-2 rounded-md ${isStandalone ? 'bg-teal-600 text-white' : 'bg-gray-200'}`}
+            >
+              Standalone Report
+            </button>
+          </div>
+        </div>
+
         {/* Patient ID Input */}
         <div className="mb-8 flex items-center justify-between">
           <label htmlFor="patientId" className="text-gray-800 font-medium mr-4">
@@ -136,44 +180,89 @@ const AddReport = () => {
           </div>
         )}
 
-        {/* Test Selection Dropdown */}
-        <div className="mb-8 flex items-center justify-between">
-          <label htmlFor="testSelect" className="text-gray-800 font-medium mr-4">
-            Select Test
-          </label>
-          <select
-            id="testSelect"
-            value={selectedTest}
-            onChange={(e) => setSelectedTest(e.target.value)}
-            className="flex-1 py-2 px-3 bg-gray-200 rounded-md text-gray-700 appearance-none"
-            disabled={!patientData || availableTests.length === 0}
-          >
-            <option key={0} value="">Select a test...</option>
-            {availableTests.map((test) => (
-              <option key={test._id} value={test._id}>
-                {test.title}
-              </option>
-            ))}
-          </select>
-        </div>
+        {!isStandalone ? (
+          /* Test Selection Dropdown */
+          <div className="mb-8 flex items-center justify-between">
+            <label htmlFor="testSelect" className="text-gray-800 font-medium mr-4">
+              Select Test
+            </label>
+            <select
+              id="testSelect"
+              value={selectedTest}
+              onChange={(e) => setSelectedTest(e.target.value)}
+              className="flex-1 py-2 px-3 bg-gray-200 rounded-md text-gray-700 appearance-none"
+              disabled={!patientData || availableTests.length === 0}
+            >
+              <option value="">Select a test...</option>
+              {availableTests.map((test) => (
+                <option key={test._id} value={test._id}>
+                  {test.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          /* Standalone Report Fields */
+          <div className="space-y-6 mb-8">
+            <div className="flex items-center justify-between">
+              <label htmlFor="reportTitle" className="text-gray-800 font-medium mr-4">
+                Report Title:
+              </label>
+              <input
+                type="text"
+                id="reportTitle"
+                value={reportTitle}
+                onChange={(e) => setReportTitle(e.target.value)}
+                className="flex-1 py-2 px-3 bg-gray-200 rounded-md text-gray-700"
+                placeholder="Enter report title"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="reportType" className="text-gray-800 font-medium mr-4">
+                Report Type:
+              </label>
+              <input
+                type="text"
+                id="reportType"
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+                className="flex-1 py-2 px-3 bg-gray-200 rounded-md text-gray-700"
+                placeholder="Enter report type"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="reportDescription" className="text-gray-800 font-medium mr-4">
+                Report Type:
+              </label>
+              <input
+                type="text"
+                id="reportDescription"
+                value={reportDescription}
+                onChange={(e) => setReportDescription(e.target.value)}
+                className="flex-1 py-2 px-3 bg-gray-200 rounded-md text-gray-700"
+                placeholder="Enter report description/findings"
+              />
+            </div>
+          </div>
+        )}
 
         {/* File Upload */}
         <div className="flex justify-center mt-16">
           <div className="flex space-x-4">
-            <label className={`${!patientData || !selectedTest ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 cursor-pointer'} text-white px-4 py-2 rounded transition-colors`}>
+            <label className={`${!patientData && !isStandalone ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 cursor-pointer'} text-white px-4 py-2 rounded transition-colors`}>
               Choose File
               <input
                 type="file"
                 className="hidden"
                 onChange={handleFileSelect}
-                disabled={!patientData || !selectedTest}
+                disabled={!patientData && !isStandalone}
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
               />
             </label>
             <button
               type="submit"
-              disabled={!selectedFile || !selectedTest || !patientData || loading}
-              className={`${!selectedFile || !selectedTest || !patientData || loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 cursor-pointer'} text-white px-4 py-2 rounded transition-colors`}
+              disabled={!selectedFile || (!isStandalone && (!selectedTest || !patientData)) || loading}
+              className={`${!selectedFile || (!isStandalone && (!selectedTest || !patientData)) || loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 cursor-pointer'} text-white px-4 py-2 rounded transition-colors`}
             >
               {loading ? 'Uploading...' : 'Upload Report'}
             </button>
