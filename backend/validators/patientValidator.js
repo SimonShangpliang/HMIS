@@ -46,7 +46,7 @@ const PatientJoiSchema = Joi.object({
         'date.less': 'Date of birth must be in the past'
     }),
     aadhar_number: Joi.string().pattern(/^\d{12}$/).optional(),
-    gender: Joi.string().valid("male", "female").optional(),
+    gender: Joi.string().valid("Male", "Female").optional(),
     address: Joi.string().optional(),
     patient_info: PatientInfoJoiSchema.optional(),
     vitals: Joi.array().items(VitalsJoiSchema).optional(),

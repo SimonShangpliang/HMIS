@@ -33,7 +33,7 @@ const EmployeeJoiSchema = Joi.object({
         'date.less': 'Date of birth must be in the past'
     }),
     date_of_joining: Joi.date().optional(),
-    gender: Joi.string().valid("male", "female").optional(),
+    gender: Joi.string().valid("Male", "Female").optional(),
     salary: Joi.number().min(0).optional(),
     bank_details: BankDetailsJoiSchema.optional()
 });

@@ -37,7 +37,7 @@ const PatientSchema = new Schema({
   email: { type: String, unique: true },
   date_of_birth: Date,
   aadhar_number: { type: String, unique: true },
-  gender: {type: String, enum:["male","female"]},
+  gender: {type: String, enum:["Male","Female"]},
   address: String,
   patient_info: PatientInfoSchema, // Embedded document
   vitals: [VitalsSchema], // Array of embedded documents

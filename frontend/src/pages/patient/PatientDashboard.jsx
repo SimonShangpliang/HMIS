@@ -24,9 +24,9 @@ const PatientDashboard = () => {
   const fileInputRef = useRef(null);
   const {setUser } = useAuth();
 
-  const patientId = '10012'
-  //localStorage.getItem("user_id");
-
+  // const patientId = '10012'
+  // localStorage.getItem("user_id");
+  const patientId = localStorage.getItem("user_id");
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -142,8 +142,8 @@ const PatientDashboard = () => {
         setPolicyEndDate("");
       }
     } catch (error) {
-      console.error('Failed to verify insurance:', error);
-      setVerificationMessage("Failed to verify insurance. Please try again.");
+      console.error('Failed to verify insurance:', error.response.data.message);
+      setVerificationMessage("Failed to verify insurance: " + error.response.data.message);
     } finally {
       setIsVerifying(false);
     }

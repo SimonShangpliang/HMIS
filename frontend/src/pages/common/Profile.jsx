@@ -233,7 +233,7 @@ const ProfileDashboard = () => {
       { key: "phone_number", label: "Phone Number", type: "text" },
       { key: "emergency_contact", label: "Emergency Contact", type: "text" },
       { key: "address", label: "Address", type: "textarea" },
-      { key: "gender", label: "Gender", type: "select", options: ["male", "female"] },
+      { key: "gender", label: "Gender", type: "select", options: ["Male", "Female"] },
       { key: "bloodGrp", label: "Blood Group", type: "select", 
         options: ["A+", "B+", "AB+", "O+", "A-", "B-", "AB-", "O-"] },
       { key: "date_of_birth", label: "Date of Birth", type: "date" }

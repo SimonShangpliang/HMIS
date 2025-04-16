@@ -20,27 +20,27 @@ The `Employee` schema represents staff members across various roles in the medic
 
 ### Fields
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|------------|
-| `_id` | Number | Auto-incremented employee ID | None |
-| `name` | String | Full name of employee | None |
-| `email` | String | Email address | Unique: true |
-| `password` | String | Authentication password | None |
-| `profile_pic` | String | URL or path to profile picture | None |
+| Field | Type | Description | Constraints                                                                             |
+|-------|------|-------------|-----------------------------------------------------------------------------------------|
+| `_id` | Number | Auto-incremented employee ID | None                                                                                    |
+| `name` | String | Full name of employee | None                                                                                    |
+| `email` | String | Email address | Unique: true                                                                            |
+| `password` | String | Authentication password | None                                                                                    |
+| `profile_pic` | String | URL or path to profile picture | None                                                                                    |
 | `role` | String | Job role | Enum: "doctor", "nurse", "pharmacist", "receptionist", "admin", "pathologist", "driver" |
-| `dept_id` | ObjectId | Department reference | References 'Department' model |
-| `phone_number` | String | Contact phone number | None |
-| `emergency_contact` | String | Emergency contact number | None |
-| `bloodGrp` | String | Blood group | Enum: "A+", "B+", "AB+", "O+", "A-", "B-", "AB-", "O-" |
-| `address` | String | Residential address | None |
-| `date_of_birth` | Date | Birth date | None |
-| `aadhar_number` | String | Unique government ID | Unique: true |
-| `date_of_joining` | Date | Employment start date | None |
-| `gender` | String | Gender | Enum: "male", "female" |
-| `salary` | Number | Monthly salary amount | None |
-| `bank_details` | Object | Banking information | Embedded BankDetails document |
-| `createdAt` | Date | Auto-generated timestamp | Added by timestamps option |
-| `updatedAt` | Date | Auto-updated timestamp | Added by timestamps option |
+| `dept_id` | ObjectId | Department reference | References 'Department' model                                                           |
+| `phone_number` | String | Contact phone number | None                                                                                    |
+| `emergency_contact` | String | Emergency contact number | None                                                                                    |
+| `bloodGrp` | String | Blood group | Enum: "A+", "B+", "AB+", "O+", "A-", "B-", "AB-", "O-"                                  |
+| `address` | String | Residential address | None                                                                                    |
+| `date_of_birth` | Date | Birth date | None                                                                                    |
+| `aadhar_number` | String | Unique government ID | Unique: true                                                                            |
+| `date_of_joining` | Date | Employment start date | None                                                                                    |
+| `gender` | String | Gender | Enum: "Male", "Female"                                                                  |
+| `salary` | Number | Monthly salary amount | None                                                                                    |
+| `bank_details` | Object | Banking information | Embedded BankDetails document                                                           |
+| `createdAt` | Date | Auto-generated timestamp | Added by timestamps option                                                              |
+| `updatedAt` | Date | Auto-updated timestamp | Added by timestamps option                                                              |
 
 ### Options
 - `timestamps: true`: Automatically adds and manages `createdAt` and `updatedAt` fields
@@ -71,7 +71,7 @@ const newEmployee = new Employee({
   date_of_birth: new Date('1985-06-15'),
   aadhar_number: "123456789012",
   date_of_joining: new Date('2020-03-10'),
-  gender: "female",
+  gender: "Female",
   salary: 120000,
   bank_details: {
     bank_name: "State Bank of India",

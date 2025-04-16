@@ -30,20 +30,20 @@ This document describes the validation rules applied to the Patient system's API
 
 ## Patient Validation Schema
 
-| Field | Validation Rules | Error Message |
-|-------|------------------|---------------|
-| `password` | Optional string, minimum 6 characters | Default Joi error messages |
-| `name` | Optional string, 3-100 characters | Default Joi error messages |
-| `profile_pic` | Optional URI string, empty string allowed | Default Joi error messages |
-| `phone_number` | Optional string of exactly 10 digits | Default Joi error messages |
-| `emergency_contact` | Optional string of exactly 10 digits | Default Joi error messages |
-| `email` | Optional valid email format | Default Joi error messages |
-| `date_of_birth` | Optional date, must be in the past | "Date of birth must be in the past" |
-| `aadhar_number` | Optional string of exactly 12 digits | Default Joi error messages |
-| `gender` | Optional enum: "male", "female" | Default Joi error messages |
-| `address` | Optional string | Default Joi error messages |
-| `patient_info` | Optional PatientInfoJoiSchema object | See PatientInfo validation |
-| `vitals` | Optional array of VitalsJoiSchema objects | See Vitals validation |
+| Field | Validation Rules                           | Error Message |
+|-------|--------------------------------------------|---------------|
+| `password` | Optional string, minimum 6 characters      | Default Joi error messages |
+| `name` | Optional string, 3-100 characters          | Default Joi error messages |
+| `profile_pic` | Optional URI string, empty string allowed  | Default Joi error messages |
+| `phone_number` | Optional string of exactly 10 digits       | Default Joi error messages |
+| `emergency_contact` | Optional string of exactly 10 digits       | Default Joi error messages |
+| `email` | Optional valid email format                | Default Joi error messages |
+| `date_of_birth` | Optional date, must be in the past         | "Date of birth must be in the past" |
+| `aadhar_number` | Optional string of exactly 12 digits       | Default Joi error messages |
+| `gender` | Optional enum: "Male", "Female"            | Default Joi error messages |
+| `address` | Optional string                            | Default Joi error messages |
+| `patient_info` | Optional PatientInfoJoiSchema object       | See PatientInfo validation |
+| `vitals` | Optional array of VitalsJoiSchema objects  | See Vitals validation |
 | `insurance_details` | Optional array of MongoDB ObjectId strings | Default Joi error messages |
 
 ## Usage Examples

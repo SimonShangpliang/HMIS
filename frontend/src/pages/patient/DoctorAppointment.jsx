@@ -143,7 +143,7 @@ const DoctorAppointment = () => {
             <p className="doctor-specialty">{doctor.specialization}</p>
             <div className="doctor-rating">
               <Star size={16} className="star-icon" />
-              <span>{doctor.rating}/5</span>
+              <span>{doctor.rating.toFixed(2)}/5</span>
               <span className="rating-count">({doctor.num_ratings} ratings)</span>
             </div>
           </div>

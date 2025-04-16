@@ -92,6 +92,19 @@ router.get('/:patientId/insurances', async (req, res) => {
       if (existingPatientIndex !== -1) {
         return res.status(400).json({ message: 'Patient already has this insurance' });
       }
+      //check policy-end-date
+      const currentDate = new Date();
+      const policyEndDate = new Date(policy_end_date);
+      if (policyEndDate < currentDate) {
+        return res.status(400).json({ message: 'Policy end date must be in the future' });
+      }
+      // Check if policy number already exists for this insurance
+      const existingPolicyIndex = insurance.patients.findIndex(
+        p => p.policy_number === policy_number
+      );
+      if (existingPolicyIndex !== -1) {
+        return res.status(400).json({ message: 'Policy number already exists for this insurance' });
+      }
       
       // Add patient to insurance
       insurance.patients.push({

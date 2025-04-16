@@ -6,6 +6,8 @@ import Employee from '../models/employee.js';
 import Department from '../models/department.js';
 import cloudinary from "../config/cloudinary.js";
 
+import { PatientJoiSchema, VitalsJoiSchema, PatientInfoJoiSchema} from '../validators/patientValidator.js';
+
 export const registerPatient = async (req, res) => {
   try {
     const {
@@ -26,6 +28,35 @@ export const registerPatient = async (req, res) => {
     const existingPatient = await Patient.findOne({ $or: [{ email }, { aadhar_number: aadharId }] });
     if (existingPatient) {
         return res.status(400).json({ message: 'Email or Aadhar ID already exists.' });
+    }
+
+    // Format the data according to your schema structure
+    const patientData = {
+      name: patientName,
+      aadhar_number: aadharId,
+      date_of_birth: dob,
+      gender,
+      email,
+      address,
+      emergency_contact: emergencyNumber,
+      phone_number: mobile,
+      password,
+      patient_info: {
+        bloodGrp: bloodGroup,
+        height,
+        weight
+      }
+    };
+
+    // Validate using Joi schema
+    const { error, value } = PatientJoiSchema.validate(patientData);
+
+    // If validation fails, return error
+    if (error) {
+      return res.status(400).json({
+        message: error.details[0].message,
+        error: error.details[0].message
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

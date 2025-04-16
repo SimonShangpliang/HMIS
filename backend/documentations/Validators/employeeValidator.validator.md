@@ -14,21 +14,21 @@ This document describes the validation rules applied to the Employee system's AP
 
 ## Employee Validation Schema
 
-| Field | Validation Rules | Error Message |
-|-------|------------------|---------------|
-| `name` | Optional string, 3-100 characters | Default Joi error messages |
-| `email` | Optional valid email format | Default Joi error messages |
-| `password` | Optional string, minimum 6 characters | Default Joi error messages |
-| `profile_pic` | Optional URI string, empty string allowed | Default Joi error messages |
+| Field | Validation Rules                                                                                 | Error Message |
+|-------|--------------------------------------------------------------------------------------------------|---------------|
+| `name` | Optional string, 3-100 characters                                                                | Default Joi error messages |
+| `email` | Optional valid email format                                                                      | Default Joi error messages |
+| `password` | Optional string, minimum 6 characters                                                            | Default Joi error messages |
+| `profile_pic` | Optional URI string, empty string allowed                                                        | Default Joi error messages |
 | `role` | Optional enum: "doctor", "nurse", "pharmacist", "receptionist", "admin", "pathologist", "driver" | Default Joi error messages |
-| `dept_id` | Optional string matching MongoDB ObjectId pattern | "dept_id must be a valid ObjectId" |
-| `phone_number` | Optional string of exactly 10 digits | "Phone number must be 10 digits" |
-| `address` | Optional string | Default Joi error messages |
-| `date_of_birth` | Optional date, must be in the past | "Date of birth must be in the past" |
-| `date_of_joining` | Optional date | Default Joi error messages |
-| `gender` | Optional enum: "male", "female" | Default Joi error messages |
-| `salary` | Optional number, minimum 0 | Default Joi error messages |
-| `bank_details` | Optional BankDetailsJoiSchema object | See Bank Details validation |
+| `dept_id` | Optional string matching MongoDB ObjectId pattern                                                | "dept_id must be a valid ObjectId" |
+| `phone_number` | Optional string of exactly 10 digits                                                             | "Phone number must be 10 digits" |
+| `address` | Optional string                                                                                  | Default Joi error messages |
+| `date_of_birth` | Optional date, must be in the past                                                               | "Date of birth must be in the past" |
+| `date_of_joining` | Optional date                                                                                    | Default Joi error messages |
+| `gender` | Optional enum: "Male", "Female"                                                                  | Default Joi error messages |
+| `salary` | Optional number, minimum 0                                                                       | Default Joi error messages |
+| `bank_details` | Optional BankDetailsJoiSchema object                                                             | See Bank Details validation |
 
 ## Usage Examples
 

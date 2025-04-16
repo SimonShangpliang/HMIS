@@ -100,7 +100,7 @@ const RegisterPage = () => {
           password: '',
           confirmPassword: ''
         });
-        navigate("/patient/profile")
+        navigate("/login")
       } else {
         setMessage({ type: 'error', text: data.message || 'Registration failed' });
       }
@@ -271,7 +271,7 @@ const RegisterPage = () => {
                 <option value="">Select Gender</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-                <option value="Other">Other</option>
+                {/*<option value="Other">Other</option>*/}
               </select>
             </div>
             

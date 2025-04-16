@@ -34,7 +34,7 @@ const EmployeeSchema = new Schema({
   date_of_birth: Date,
   aadhar_number: { type: String, unique: true },
   date_of_joining: Date,
-  gender: { type: String, enum: ["male", "female"] },
+  gender: { type: String, enum: ["Male", "Female"] },
   salary: Number,
   bank_details: BankDetailsSchema, // Embedded document
 }, { timestamps: true , _id:false });

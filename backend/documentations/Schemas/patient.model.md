@@ -48,24 +48,24 @@ The main `Patient` schema represents registered patients in the medical facility
 
 ### Fields
 
-| Field | Type | Description | Constraints |
-|-------|------|-------------|------------|
-| `_id` | Number | Auto-incremented patient ID | None |
-| `password` | String | Authentication password | None |
-| `name` | String | Full name of patient | None |
-| `profile_pic` | String | URL or path to profile picture | None |
-| `phone_number` | String | Contact phone number | None |
-| `emergency_contact` | String | Emergency contact number | None |
-| `email` | String | Email address | Unique: true |
-| `date_of_birth` | Date | Birth date | None |
-| `aadhar_number` | String | Unique government ID | Unique: true |
-| `gender` | String | Gender | Enum: "male", "female" |
-| `address` | String | Residential address | None |
+| Field | Type | Description | Constraints                   |
+|-------|------|-------------|-------------------------------|
+| `_id` | Number | Auto-incremented patient ID | None                          |
+| `password` | String | Authentication password | None                          |
+| `name` | String | Full name of patient | None                          |
+| `profile_pic` | String | URL or path to profile picture | None                          |
+| `phone_number` | String | Contact phone number | None                          |
+| `emergency_contact` | String | Emergency contact number | None                          |
+| `email` | String | Email address | Unique: true                  |
+| `date_of_birth` | Date | Birth date | None                          |
+| `aadhar_number` | String | Unique government ID | Unique: true                  |
+| `gender` | String | Gender | Enum: "Male", "Female"        |
+| `address` | String | Residential address | None                          |
 | `patient_info` | Object | Medical characteristics | Embedded PatientInfo document |
-| `vitals` | Array | History of vital signs | Embedded Vitals documents |
-| `insurance_details` | Array | Associated insurance policies | References 'Insurance' model |
-| `createdAt` | Date | Auto-generated timestamp | Added by timestamps option |
-| `updatedAt` | Date | Auto-updated timestamp | Added by timestamps option |
+| `vitals` | Array | History of vital signs | Embedded Vitals documents     |
+| `insurance_details` | Array | Associated insurance policies | References 'Insurance' model  |
+| `createdAt` | Date | Auto-generated timestamp | Added by timestamps option    |
+| `updatedAt` | Date | Auto-updated timestamp | Added by timestamps option    |
 
 ### Options
 - `timestamps: true`: Automatically adds and manages `createdAt` and `updatedAt` fields
@@ -92,7 +92,7 @@ const newPatient = new Patient({
   email: "rahul.sharma@example.com",
   date_of_birth: new Date('1985-07-22'),
   aadhar_number: "1234-5678-9012",
-  gender: "male",
+  gender: "Male",
   address: "123 Residential Colony, Mumbai",
   patient_info: {
     age: 40,
