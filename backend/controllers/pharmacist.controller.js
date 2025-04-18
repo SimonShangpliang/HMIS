@@ -1,8 +1,10 @@
+// pharmacist.controller.js
+
 import mongoose from 'mongoose';
 import { Consultation, Prescription } from '../models/consultation.js';
 import Medicine from '../models/inventory.js';
 
-// Safe import for Patient to avoid duplicate model registration error
+// Safe import for Patient with numeric _id
 let Patient;
 try {
   Patient = mongoose.model('Patient');
@@ -15,15 +17,13 @@ export const searchPatientPrescriptions = async (req, res) => {
   try {
     const { searchById, dispense } = req.query;
 
-    if (!searchById) {
-      return res.status(400).json({ message: "Search query is required." });
+    if (!searchById || isNaN(Number(searchById))) {
+      return res.status(400).json({ message: "Valid numeric patient ID is required." });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(searchById)) {
-      return res.status(400).json({ message: "Invalid patient ID format." });
-    }
+    const patientId = Number(searchById);
 
-    const patientDetails = await Patient.findById(searchById).select(
+    const patientDetails = await Patient.findOne({ _id: patientId }).select(
       'name patient_info.age patient_info.bloodgroup patient_info.phone'
     );
 
@@ -31,7 +31,8 @@ export const searchPatientPrescriptions = async (req, res) => {
       return res.status(404).json({ message: "Patient not found." });
     }
 
-    const consultation = await Consultation.findOne({ patient_id: searchById }).sort({ actual_start_datetime: -1 });
+    const consultation = await Consultation.findOne({ patient_id: patientId })
+      .sort({ actual_start_datetime: -1 });
 
     if (!consultation || !consultation.prescription || consultation.prescription.length === 0) {
       return res.status(404).json({ message: "No consultations or prescriptions found for this patient." });
@@ -55,6 +56,7 @@ export const searchPatientPrescriptions = async (req, res) => {
         let validBatches = med.inventory.filter(batch =>
           new Date(batch.expiry_date) > now && batch.quantity > 0
         );
+
         let requiredQty = entry.quantity - entry.dispensed_qty;
         let originalQty = requiredQty;
 
@@ -139,17 +141,21 @@ export const searchPatientPrescriptions = async (req, res) => {
   }
 };
 
-// 2. UPDATE ONLY DISPENSED QTY (RESTRICT PHARMACIST EDITS)
+// 2. UPDATE ONLY DISPENSED QTY
 export const updatePrescriptionEntry = async (req, res) => {
   try {
     const { prescriptionId, entryId } = req.params;
     const { dispensed_qty } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(prescriptionId) || !mongoose.Types.ObjectId.isValid(entryId)) {
-      return res.status(400).json({ message: "Invalid prescription or entry ID." });
+    if (isNaN(Number(prescriptionId))) {
+      return res.status(400).json({ message: "Prescription ID must be numeric." });
     }
 
-    const prescription = await Prescription.findById(prescriptionId);
+    if (!mongoose.Types.ObjectId.isValid(entryId)) {
+      return res.status(400).json({ message: "Invalid entry ID format." });
+    }
+
+    const prescription = await Prescription.findOne({ _id: Number(prescriptionId) });
     if (!prescription) {
       return res.status(404).json({ message: "Prescription not found." });
     }
@@ -163,7 +169,6 @@ export const updatePrescriptionEntry = async (req, res) => {
       return res.status(400).json({ message: "Valid dispensed quantity is required." });
     }
 
-    // Prevent exceeding prescribed quantity
     if (dispensed_qty > entry.quantity) {
       return res.status(400).json({ message: "Dispensed quantity cannot exceed prescribed quantity." });
     }
