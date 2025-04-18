@@ -48,10 +48,8 @@ app.get("/", (req, res) => {
   res.send("Backend is running with ES Modules");
 });
 
-
 app.get("/test", (req, res) => {
- 
-    res.send("Frontend Connected to Backend");
+  res.send("Frontend Connected to Backend");
 });
 
 cron.schedule("0 0 * * *", async () => {
@@ -68,8 +66,8 @@ global.hospitalBankAccount = {
   balance: 5000, // Default balance
 };
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static("dist"));
+// app.use(express.urlencoded({ extended: true }));
+// app.use(express.static("dist"));
 
 //routes
 app.use("/api/tests", testRoutes);
@@ -94,11 +92,11 @@ app.use("/api/common", commonPageRoutes);
 app.use("/api/insurance", insuranceRoutes);
 app.use("/api/gemini", geminiRoutes);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "/dist/index.html"));
-});
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "/dist/index.html"));
+// });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

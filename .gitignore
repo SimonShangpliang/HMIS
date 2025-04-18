@@ -4,10 +4,13 @@ package-lock.json
 
 # Build files
 frontend/dist/
+backend/dist/
 backend/logs/
+backend/.env
 
 # Vite and cache files
 frontend/.vite/
+frontend/.env
 .vscode/
 .DS_Store
 
