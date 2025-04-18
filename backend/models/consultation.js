@@ -50,7 +50,7 @@ const ConsultationSchema = new Schema(
     booked_date_time: Date,
     status: {
       type: String,
-      enum: ["scheduled", "ongoing", "completed", "cancelled"],
+      enum: ["requested","scheduled", "ongoing", "completed", "cancelled"],
     },
     reason: String, //symptoms
     created_by: { type: Schema.Types.ObjectId, ref: "Receptionist" },

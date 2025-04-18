@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, X } from "lucide-react";
+import { CloudCog, Home, X } from "lucide-react";
 import axios from "axios";
+import html2pdf from 'html2pdf.js';
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import "jspdf-autotable";
+import bill from "../../../../backend/models/bill";
 
 // API base URL - adjust as needed
 const API_BASE_URL = `${import.meta.env.VITE_API_URL}/billing`;
 
 const Bills = () => {
+
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [billDetails, setBillDetails] = useState(null);
@@ -23,7 +29,147 @@ const Bills = () => {
   });
 
   const navigate = useNavigate();
-  const patientId = "10013"; // This should come from authentication/context in a real app
+  const patientId = localStorage.getItem("user_id");
+
+  const formatINR = (amount) => {
+    return amount.toFixed(2).toString();
+  };
+  
+  const handlePrint = () => {
+    try {
+      const doc = new jsPDF();
+      let y = 10;
+      const pageHeight = 290;
+  
+      // Title
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Patient Billing Receipt', 14, y);
+      y += 10;
+  
+      // Bill and patient info
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Bill ID: ${billDetails?.bill_id || 'N/A'}`, 14, y);
+      y += 6;
+      doc.text(`Patient ID: ${billDetails?.patient_id || 'Unknown'}`, 14, y);
+      y += 10;
+  
+      // Billing Items Section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Billing Items', 14, y);
+      y += 8;
+  
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Date', 14, y);
+      doc.text('Type', 40, y);
+      doc.text('Description', 70, y);
+      doc.text('Amount', 190, y, { align: 'right' });
+      y += 6;
+  
+      doc.setFont('helvetica', 'normal');
+      if (doc.setCharSpace) doc.setCharSpace(0); // Reduces spacing between characters
+  
+      if (billDetails?.bill_items && billDetails.bill_items.length > 0) {
+        billDetails.bill_items.forEach((item) => {
+          if (y > pageHeight) {
+            doc.addPage();
+            y = 10;
+          }
+  
+          const itemDate = billDetails?.generation_date || '-';
+          const itemType = item?.item_type?.enum || '-';
+          const description = item?.item_description || '-';
+          const rawAmount = Number(item?.item_amount || 0) * Number(item?.quantity || 1);
+          const amount = formatINR(rawAmount);
+  
+          const wrappedDesc = doc.splitTextToSize(description, 100);
+          const descHeight = wrappedDesc.length * 6;
+  
+          doc.text(itemDate, 14, y);
+          doc.text(itemType, 40, y);
+          doc.text(wrappedDesc, 70, y);
+          doc.text(amount, 190, y, { align: 'right' });
+  
+          y += descHeight;
+        });
+      } else {
+        doc.text('No billing items found.', 14, y);
+      }
+  
+      y += 8;
+  
+      // Payments Section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Payments', 14, y);
+      y += 8;
+  
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Date', 14, y);
+      doc.text('Amount', 60, y);
+      doc.text('Status + Txn ID', 110, y);
+      y += 6;
+  
+      doc.setFont('helvetica', 'normal');
+  
+      if (payments && payments.length > 0) {
+        payments.forEach((payment) => {
+          if (y > pageHeight) {
+            doc.addPage();
+            y = 10;
+          }
+  
+          const payDate = payment?.payment_date || '-';
+          const payAmount = formatINR(payment.amount || 0);
+          const status = typeof payment.status.enum === 'object'
+            ? JSON.stringify(payment.status.enum)
+            : payment.status.enum || '-';
+          const txnId = payment?.transaction_id || 'N/A';
+  
+          doc.text(payDate, 14, y);
+          doc.text(payAmount, 60, y);
+          doc.text(`${status} (${txnId})`, 110, y);
+          y += 6;
+        });
+      } else {
+        doc.text('No payments found.', 14, y);
+        y += 8;
+      }
+  
+      // Billing Summary
+      y += 6;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Billing Summary', 14, y);
+      y += 8;
+  
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      const billed = formatINR(summary.billed || 0);
+      doc.text(`Billed: `, 14, y);
+      doc.text(billed, 50, y);
+      y += 6;
+      const paid = formatINR(summary.paid || 0);
+      doc.text('Paid:', 14, y);
+      doc.text(paid, 50, y);
+      y += 6;
+      const net = formatINR(summary.net || 0);
+      doc.text('Balance:', 14, y);
+      doc.text(net, 50, y);
+      y += 10;
+  
+      // Save PDF
+      doc.save('billing_receipt.pdf');
+    } catch (error) {
+      console.error('Error printing receipt:', error);
+    }
+  };
+  
+  
 
   // Fetch all bills for the patient
   useEffect(() => {
@@ -169,11 +315,6 @@ const Bills = () => {
   };
 
 
-  const handlePrintReceipt = () => {
-    console.log("Printing receipt");
-    // Implementation would trigger print receipt function
-  };
-
   const summary = calculateSummary();
 
   if (loading && !selectedBill) {
@@ -264,48 +405,49 @@ const Bills = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Payments section */}
-                <div>
-                  <div className="flex items-center mb-2">
-                    <h3 className="font-medium">Payments</h3>
-                    <button
-                      className="ml-4 bg-[#4C7E75] hover:bg-[#3d635c] text-white py-1 px-3 rounded text-sm"
-                      onClick={handleOpenPaymentModal}
-                    >
-                      + Add Payment
-                    </button>
-                  </div>
-
-                  {/* Payments table */}
-                  <div className="overflow-hidden rounded mb-4">
-                    {/* Table header */}
-                    <div className="flex bg-[#1b2432] text-white py-2 rounded-t">
-                      <div className="w-1/4 truncate text-center px-1">Date</div>
-                      <div className="w-1/4 truncate text-center px-1">Mode</div>
-                      <div className="w-1/4 truncate text-center px-1">Amount</div>
-                      <div className="w-1/4 truncate text-center px-1">Status + Proof (Trans...)</div>
+                
+                  {/* Payments section */}
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <h3 className="font-medium">Payments</h3>
+                      <button
+                        className="ml-4 bg-[#4C7E75] hover:bg-[#3d635c] text-white py-1 px-3 rounded text-sm"
+                        onClick={handleOpenPaymentModal}
+                      >
+                        + Add Payment
+                      </button>
                     </div>
 
-                    {/* Table rows */}
-                    {payments && payments.length > 0 ? (
-                      payments.map((payment) => (
-                        <div key={payment._id} className="flex bg-[#1d2839] text-white py-2 border-t border-gray-700">
-                          <div className="w-1/4 truncate text-center px-1">{payment.payment_date}</div>
-                          <div className="w-1/4 truncate text-center px-1 capitalize">{payment.payment_method?.enum}</div>
-                          <div className="w-1/4 truncate text-center px-1">{formatAmount(payment.amount)}</div>
-                          <div className="w-1/4 truncate text-center px-1">
-                            {payment.status?.enum} ({payment.transaction_id})
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="bg-[#1d2839] text-white py-4 text-center">
-                        No payments found
+                    {/* Payments table */}
+                    <div className="overflow-hidden rounded mb-4">
+                      {/* Table header */}
+                      <div className="flex bg-[#1b2432] text-white py-2 rounded-t">
+                        <div className="w-1/4 truncate text-center px-1">Date</div>
+                        <div className="w-1/4 truncate text-center px-1">Mode</div>
+                        <div className="w-1/4 truncate text-center px-1">Amount</div>
+                        <div className="w-1/4 truncate text-center px-1">Status + Proof (Trans...)</div>
                       </div>
-                    )}
+
+                      {/* Table rows */}
+                      {payments && payments.length > 0 ? (
+                        payments.map((payment) => (
+                          <div key={payment._id} className="flex bg-[#1d2839] text-white py-2 border-t border-gray-700">
+                            <div className="w-1/4 truncate text-center px-1">{payment.payment_date}</div>
+                            <div className="w-1/4 truncate text-center px-1 capitalize">{payment.payment_method?.enum}</div>
+                            <div className="w-1/4 truncate text-center px-1">{formatAmount(payment.amount)}</div>
+                            <div className="w-1/4 truncate text-center px-1">
+                              {payment.status?.enum} ({payment.transaction_id})
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="bg-[#1d2839] text-white py-4 text-center">
+                          No payments found
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+              
 
                 {/* Billing summary - simplified design */}
                 <div className="bg-gray-100 p-4 rounded-lg flex justify-between items-center">
@@ -328,7 +470,7 @@ const Bills = () => {
 
                   <button
                     className="bg-[#4C7E75] hover:bg-[#3d635c] text-white py-2 px-4 rounded"
-                    onClick={handlePrintReceipt}
+                    onClick={handlePrint}
                   >
                     Print Receipt
                   </button>
@@ -339,9 +481,10 @@ const Bills = () => {
         ) : (
           // Bills listing
           <>
-            <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Patient Bills</h2>
-            </div>
+            <header className="consultations-header">
+              <h2>Patient Bills</h2>
+              <Home className="home-icon cursor-pointer" onClick={() => navigate("/patient/profile")}/>
+            </header>
 
             {bills.length > 0 ? (
               bills.map((bill) => (
@@ -383,7 +526,6 @@ const Bills = () => {
             ) : (
               <div className="text-center text-gray-500 py-8 bg-gray-100 rounded">
                 <p className="mb-4">No Bills Available</p>
-                <p className="text-sm">Create a new bill to get started</p>
               </div>
             )}
           </>
@@ -481,3 +623,4 @@ const Bills = () => {
 };
 
 export default Bills;
+

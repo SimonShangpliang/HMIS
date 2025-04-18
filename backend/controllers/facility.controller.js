@@ -54,12 +54,11 @@ export const decommissionAmbulance = async (req, res) => {
     try {
         const { vehicle_number } = req.body;
         // console.log(req.body);
-        const ambulance = await Ambulance.findOne({ vehicle_number });
+        const ambulance = await Ambulance.findOneAndDelete({ vehicle_number });
         if (!ambulance) {
             return res.status(404).json({ message: 'Ambulance not found' });
         }
-        ambulance.status = 'inactive'; // Update status to inactive
-        await ambulance.save();
+
         res.status(200).json({ message: 'Ambulance decommissioned successfully', ambulance });
     } catch (error) {
         res.status(500).json({ message: 'Error decommissioning ambulance', error });
@@ -74,3 +73,4 @@ export const getAllAmbulances = async (req, res) => {
         res.status(500).json({ message: 'Error retrieving ambulances', error });
     }
 }
+

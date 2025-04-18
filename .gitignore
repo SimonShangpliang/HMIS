@@ -13,3 +13,7 @@ frontend/.vite/
 
 # IDE files
 .idea/
+
+# Testing outputs
+backend/uploads/
+/backend/temp/

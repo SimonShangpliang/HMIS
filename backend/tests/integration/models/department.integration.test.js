@@ -53,7 +53,7 @@ beforeAll(async () => {
   })
   
   // Start the server
-  server = app.listen()
+  server = app.listen(0)
   port = server.address().port
 })
 

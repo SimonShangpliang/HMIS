@@ -17,12 +17,19 @@ const DoctorAppointment = () => {
   const [reason, setReason] = useState("");
   const [appointmentType, setAppointmentType] = useState("consultation");
 
+  // Modal state controls
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+
   // Fetch doctor details
   useEffect(() => {
     const fetchDoctorDetails = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/patients/doctors/${doctorId}`);
+        console.log(response.data)
         setDoctor(response.data);
         setLoading(false);
       } catch (err) {
@@ -40,8 +47,6 @@ const DoctorAppointment = () => {
   // Generate available times for the selected date
   useEffect(() => {
     if (selectedDate) {
-      // In a real app, you would fetch available times from the backend
-      // This is a placeholder generating times between 9 AM and 5 PM
       const times = [];
       const startHour = 9;
       const endHour = 17;
@@ -81,37 +86,48 @@ const DoctorAppointment = () => {
 
   const handleBookAppointment = async () => {
     if (!selectedDate || !selectedTime) {
-      alert("Please select both date and time for your appointment");
+      setErrorMessage("Please select both date and time for your appointment");
+      setShowErrorModal(true); // Show error modal if date/time is not selected
       return;
     }
 
+    // Store the selected appointment details
+    setSelectedAppointment({
+      doctor: doctor.employee_id?.name,
+      date: selectedDate.toLocaleDateString(),
+      time: selectedTime,
+    });
+
+    // Show the confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  const confirmBookAppointment = async () => {
     try {
-      // Format date and time for API
       const appointmentDateTime = new Date(selectedDate);
-      const [hours, minutes] = selectedTime.split(':');
+      const [hours, minutes] = selectedTime.split(":");
       appointmentDateTime.setHours(parseInt(hours), parseInt(minutes));
 
-      // Get patient ID from local storage or context
       const patientId = localStorage.getItem("user_id");
 
-      // Prepare data according to your backend API requirements
       const consultationData = {
         patient_id: patientId,
-        doctor_id: doctorId,
+        doctor_id: doctor.employee_id._id,
         booked_date_time: appointmentDateTime,
         reason: reason,
         appointment_type: appointmentType,
         created_by: 10126, // Assuming 10126 is the ID of a bot account for users self creating appointments
-        // created_by can be null if created by patient or add user id if needed
+        status:'requested'
       };
-      // Make the API call to your backend endpoint
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/consultations/book`, consultationData);
 
-      alert("Appointment booked successfully!");
-      navigate("/patient/consultations"); // Navigate to appointments list
+      await axios.post(`${import.meta.env.VITE_API_URL}/consultations/book`, consultationData);
+
+      setShowConfirmModal(false);
+      navigate("/patient/consultations");
     } catch (err) {
       console.error('Error booking appointment:', err);
-      alert('Failed to book appointment. Please try again.');
+      setErrorMessage("Failed to book appointment. Please try again.");
+      setShowErrorModal(true); // Show error modal if the booking fails
     }
   };
 
@@ -256,6 +272,42 @@ const DoctorAppointment = () => {
           Book Appointment
         </button>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Confirm Appointment</h3>
+            <p>
+              Are you sure you want to book an appointment with <strong>{selectedAppointment?.doctor}</strong> on{" "}
+              <strong>{selectedAppointment?.date} at {selectedAppointment?.time}</strong>?
+            </p>
+            <div className="modal-actions">
+              <button className="cancel-modal-btn" onClick={() => setShowConfirmModal(false)}>
+                No, Cancel
+              </button>
+              <button className="confirm-modal-btn" onClick={confirmBookAppointment}>
+                Yes, Book
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Error</h3>
+            <p>{errorMessage}</p>
+            <div className="modal-actions">
+              <button className="confirm-modal-btn" onClick={() => setShowErrorModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

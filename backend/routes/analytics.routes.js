@@ -3,8 +3,8 @@ import { addRatingAndReview,calculateOverallRating, calculateDepartmentRating,ge
     getMedicineInventoryTrends,getMedicinePrescriptionTrends,addMedicine,addInventoryLog,createPrescription,createBill,addItemToBill,
     addPrescriptionEntry,getBedOccupancyTrends, getFacilityStatistics,getDoctorRatingDistribution,
     getAllConsultations ,getFeedbacksByRating ,getDoctorQuadrantData, getDepartmentQuadrantData,
-    getAllDoctorsData, getDoctorWorkingTrends, /*getAllEmployees, addNewDoctor, addConsultation, getAllDiagnoses, printAllDoctors,*/
-    getFinanceTrends, getTopKDiseases, getDiseaseTrends, getDashboardKPIs, getRatingDistribution, getMedicines} from '../controllers/analytics.controller.js';
+    getAllDoctorsData, getDoctorWorkingTrends, /*getAllEmployees, addNewDoctor, addConsultation, printAllDoctors,*/
+    getFinanceTrends, getTopKDiseases, getDiseaseTrends, getDashboardKPIs, getRatingDistribution, getMedicines, getAllDiagnoses} from '../controllers/analytics.controller.js';
 
 
     
@@ -38,18 +38,18 @@ router.post('/occupied-beds/:period', getBedOccupancyTrends);
 // Route to get facility statistics
 router.get('/facility-stats', getFacilityStatistics);
 
-router.get('/doc-performance', getDoctorQuadrantData);
-router.get('/dept-performance',getDepartmentQuadrantData);
+router.post('/doc-performance', getDoctorQuadrantData);
+router.post('/dept-performance',getDepartmentQuadrantData);
 router.get('/doctors/all',getAllDoctorsData);
 
-
+//
 //doctor-working trends
 router.get('/doctor-working', getDoctorWorkingTrends);
 //financial-trends
 router.post('/finance-trends', getFinanceTrends);
 //illness-trends
-router.get('/illness-trends/topk', getTopKDiseases);
-router.get('/illness-trends/disease-trends', getDiseaseTrends);
+router.post('/illness-trends/topk', getTopKDiseases);
+router.post('/illness-trends/disease-trends', getDiseaseTrends);
 
 router.get('/dashboard/kpis', getDashboardKPIs);
 
@@ -61,8 +61,9 @@ router.get('/feedback-rating-metrics', getRatingDistribution);
 router.get('/employees-all', getAllEmployees);
 router.post('/add-doctor', addNewDoctor);
 router.post('/add-consultation', addConsultation);
-router.get('/diagnosis-all', getAllDiagnoses);
+
 router.get('/print-all-doctors', printAllDoctors);
 */
+router.get('/diagnosis-all', getAllDiagnoses);
 
 export default router;

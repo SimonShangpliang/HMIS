@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Home } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns"; // You may need to install this package
 
@@ -118,9 +119,11 @@ const PreviousConsultations = () => {
   }
 
   return (
-    <div className="bg-white p-8 min-h-screen">
-      <h2 className="text-2xl font-normal mb-8 text-center md:text-left">Previous Consultations</h2>
-
+    <div className="book-consultation">
+      <header className="consultations-header">
+        <h2>Booked Consultations</h2>
+        <Home className="home-icon cursor-pointer" onClick={() => navigate("/patient/profile")}/>
+      </header>
       {!id ? (
         // List View
         <div className="max-w-5xl mx-auto">

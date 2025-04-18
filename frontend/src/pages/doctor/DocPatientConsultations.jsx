@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+const doctorId = "10008"; // Replace with dynamic doctor ID
+import axios from 'axios';
 
 const DocPatientConsultations = () => {
   const [consultations, setConsultations] = useState([]);
@@ -8,14 +10,19 @@ const DocPatientConsultations = () => {
 
   // Mock data fetching function
   const fetchConsultationsByPatientId = async (patientId) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { id: 1, date: "2025-04-03", doctorName: "Dr. Smith", location: "Room 101", details: "Checkup" },
-          { id: 2, date: "2025-04-05", doctorName: "Dr. Adams", location: "Room 203", details: "Follow-up" }
-        ]);
-      }, 500);
-    });
+    try {
+      const response = await axios.get(`http://localhost:5000/api/doctors/consultations` ,  {
+        params: { doctorId, patientId },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.data; // Assuming your backend sends the consultations in the response body
+    } catch (error) {
+      console.error("Error fetching consultations:", error);
+      return []; // Fallback: return empty list if there's an error
+    }
   };
 
   useEffect(() => {
@@ -37,6 +44,7 @@ const DocPatientConsultations = () => {
   const handleBackToAppointmentsClick = () => {
     navigate(`/doctor/appointments`);
   };
+  // console.log(consultations.length);
 
   return (
     <div className="p-6 bg-white">
@@ -57,18 +65,27 @@ const DocPatientConsultations = () => {
             <div className="grid grid-cols-3 text-gray-700 font-medium mb-4">
               <div className="p-3">Date</div>
               <div className="p-3">Doctor Name</div>
-              <div className="p-3">Location</div>
+              <div className="p-3">Reason</div>
             </div>
 
             {consultations.map((consultation) => (
               <div 
                 key={consultation.id} 
                 className="grid grid-cols-3 mb-4 rounded-lg overflow-hidden bg-gray-800 text-white cursor-pointer"
-                onClick={() => handleConsultationClick(consultation.id)}
+                onClick={() => handleConsultationClick(consultation._id)}
               >
-                <div className="p-4">{consultation.date}</div>
-                <div className="p-4">{consultation.doctorName}</div>
-                <div className="p-4">{consultation.location}</div>
+                  
+
+                  <div className="p-4">
+                    {consultation.actual_start_datetime
+                      ? new Date(consultation.actual_start_datetime).toLocaleString('en-US', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })
+                      : 'Not started yet'}
+                  </div>
+                <div className="p-4">{consultation.doctor_id?.employee_id?.name}</div>
+                <div className="p-4">{consultation.reason ?? 'No reason provided'}</div>
               </div>
             ))}
           </div>

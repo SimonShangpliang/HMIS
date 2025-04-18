@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/patient/BookConsultation.css";
 import { Search } from "lucide-react";
@@ -99,8 +100,10 @@ const BookConsultation = () => {
 
   return (
     <div className="book-consultation">
-      <h2 className="consultation-header">Patient Book Consultations</h2>
-
+      <header className="consultations-header">
+        <h2>Book Consultation</h2>
+        <Home className="home-icon cursor-pointer" onClick={() => navigate("/patient/profile")}/>
+      </header>
       <div className="consultation-search">
         <p className="search-title">I'm looking for</p>
         <div className="search-controls">
@@ -139,14 +142,6 @@ const BookConsultation = () => {
           filteredDoctors.map((doctor) => (
             <div key={doctor._id} className="doctor-item-container">
               <label className="doctor-item">
-                <input
-                  type="checkbox"
-                  checked={selectedDoctors.includes(doctor._id)}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    handleDoctorSelection(doctor._id);
-                  }}
-                />
                 <div
                   className="doctor-info"
                   onClick={() => handleDoctorClick(doctor._id)}

@@ -5,9 +5,14 @@ import  BedLog  from '../models/logs.js'; // Ensure the correct path to the BedL
 import Bill from '../models/bill.js'; // Ensure the correct path to the Bill model
 // import mongoose from 'mongoose';
 import crypto from 'crypto';
+import { Room } from '../models/facility.js';
+import { Nurse } from '../models/staff.js';
+import Employee from '../models/employee.js';
 import { sendPasswordEmail } from "../config/sendMail.js"; // adjust the path
 import Insurances from '../models/insurance.js'; // Ensure the correct path to the Insurances model
 // Controller for new patient registration
+import { sendAssignmentEmail,sendDischargeEmail } from "../config/sendMail.js"; // adjust the path
+
 export const registerNewPatient = async (req, res) => {
     try {
         const {
@@ -78,7 +83,7 @@ export const registerNewPatient = async (req, res) => {
         // Save the patient to the database
         const savedPatient = await newPatient.save();
         // Send email with password
-        await sendPasswordEmail(email,PlainPassword,);
+        await sendPasswordEmail(email,PlainPassword,savedPatient._id);
 
         res.status(201).json({
             message: 'Patient registered successfully.',
@@ -109,101 +114,224 @@ export const getAllPatients = async (req, res) => {
 
 
 
-// Controller for fetching all bed information
-export const getAllBedInfo = async (req, res) => {
+export const getAllRooms = async (req, res) => {
     try {
-        // BedLog.
-        const bedLogs = await BedLog.BedLog.find().populate('bed_id').populate('patient_id');
-        res.status(200).json(bedLogs);
+      const rooms = await Room.find({}, 'room_number room_type');
+      res.json(rooms);
+    } catch (err) {
+      console.error('Error fetching rooms:', err);
+      res.status(500).json({ error: 'Failed to fetch rooms' });
+    }
+  };
+
+  export const getAllBedInfo = async (req, res) => {
+    try {
+        const { room } = req.query;
+
+        if (!room) {
+            return res.status(400).json({ message: 'Room number is required in query.' });
+        }
+
+        // Step 1: Fetch room data
+        const roomData = await Room.findOne({ room_number: room }).lean();
+        if (!roomData) {
+            return res.status(404).json({ message: 'Room not found.' });
+        }
+
+        // Step 2: Collect all nurse IDs and patient IDs from the room's beds
+        const nurseIds = roomData.beds.filter(bed => bed.nurse_id != null).map(bed => bed.nurse_id);
+        const patientIds = roomData.beds.filter(bed => bed.patient_id != null).map(bed => bed.patient_id);
+
+        // Step 3: Fetch all nurses and patients in parallel using $in operator to minimize queries
+        const [nurses, patients] = await Promise.all([
+            Employee.find({ _id: { $in: nurseIds } }).lean(),
+            Patient.find({ _id: { $in: patientIds } }).lean()
+        ]);
+
+        // Step 4: Create maps for quick lookup
+        const nurseMap = new Map(nurses.map(nurse => [nurse._id.toString(), nurse.name]));
+        const patientMap = new Map(patients.map(patient => [patient._id.toString(), patient.name]));
+
+        // Step 5: Populate bed data
+        const populatedBeds = roomData.beds.map(bed => {
+            let nurse = null;
+            let patient = null;
+
+            if (bed.nurse_id != null && nurseMap.has(bed.nurse_id.toString())) {
+                nurse = {
+                    nurseId: bed.nurse_id,
+                    name: nurseMap.get(bed.nurse_id.toString())
+                };
+            }
+
+            if (bed.patient_id != null && patientMap.has(bed.patient_id.toString())) {
+                patient = {
+                    patientId: bed.patient_id,
+                    name: patientMap.get(bed.patient_id.toString())
+                };
+            }
+
+            return {
+                bedNumber: bed.bed_number,
+                status: bed.status,
+                nurse,
+                patient
+            };
+        });
+
+        // Step 6: Return the room info along with populated bed data
+        res.status(200).json({
+            roomNumber: roomData.room_number,
+            roomType: roomData.room_type,
+            beds: populatedBeds
+        });
+
     } catch (error) {
         console.error('Error fetching bed information:', error);
-        console.log('BedLog model:', BedLog);
         res.status(500).json({ message: 'Internal server error.' });
     }
 };
 
+
 // Controller for bed assignment
 export const assignBed = async (req, res) => {
-    try {
-        const { patient_id, bed_id, bed_type } = req.body;
-
-        // Validate required fields
-        if (!patient_id || !bed_id || !bed_type) {
-            return res.status(400).json({ message: 'Patient ID, Bed ID, and Bed Type are required fields' });
-        }
-
-        // Check if patient exists
-        const patient = await Patient.findById(patient_id);
-        if (!patient) {
-            return res.status(404).json({ message: 'Patient not found' });
-        }
-
-        // Check if bed is already occupied
-        const existingAssignment = await BedLog.BedLog.findOne({
-            bed_id: bed_id,
-            status: "occupied"
-        });
-
-        if (existingAssignment) {
-            return res.status(400).json({ message: 'Bed is already occupied' });
-        }
-
-        // Create new bed assignment
-        const newAssignment = new BedLog.BedLog({
-            patient_id,
-            bed_id,
-            bed_type,
-            status: "occupied",
-            time: new Date()
-        });
-
-        const savedAssignment = await newAssignment.save();
-
-        res.status(201).json({
-            message: 'Bed assigned successfully',
-            assignment: savedAssignment
-        });
-    } catch (error) {
-        console.error('Error assigning bed:', error);
-        res.status(500).json({ message: 'Internal server error' });
+    const { room, bedId, patientId, nurseId } = req.body;
+  
+    if (!room || !bedId || !patientId || !nurseId ) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
-};
+    try {
+        const patient = await Patient.findById(patientId);
+        if (!patient) {
+          return res.status(404).json({ error: 'Patient not found' });
+        }
+    
+        const nurse = await Employee.findOne({ _id: nurseId, role: 'nurse' });
+        if (!nurse) {
+          return res.status(404).json({ error: 'Nurse not found ' });
+        }
+      const roomDoc = await Room.findOne({ room_number: room });
+      if (!roomDoc) return res.status(404).json({ error: 'Room not found' });
+      console.log("All beds in the room:", roomDoc.beds);
+      const bed = roomDoc.beds.find(b => b.bed_number === Number(bedId));
+      if (!bed) return res.status(404).json({ error: 'Bed not found' });
+      bed.status = 'occupied';
+      bed.patient_id =patientId;
+      bed.nurse_id = nurseId;
+
+     
+      await sendAssignmentEmail({
+        toEmail: patient.email,
+        name: patient.name,
+        bedNo:bed.bed_number,
+        roomNumber: roomDoc.room_number,
+        role: "Patient",
+        id:patientId
+    });
+    await sendAssignmentEmail({
+        toEmail: nurse.email,
+        name: nurse.name,
+        bedNo:bed.bed_number,
+        roomNumber: roomDoc.room_number,
+        role: "Nurse",
+        id:nurseId
+    });
+
+    
+    //   Update Patient document
+    await Patient.findByIdAndUpdate(patientId, {
+        'patient_info.bedNo': bed.bed_number,
+        'patient_info.roomNo': roomDoc.room_number
+    });
+    await Nurse.findOneAndUpdate({ employee_id: nurseId }, {
+        assigned_bed: bed._id,
+        assigned_room: roomDoc._id
+    });
+    await roomDoc.save();
+
+      res.status(200).json({ message: 'Bed assigned successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  };
 
 // Controller for discharging patient from bed
+// POST /discharge-bed
 export const dischargeBed = async (req, res) => {
-    try {
-        const { assignment_id } = req.body;
-
-        // Validate required fields
-        if (!assignment_id) {
-            return res.status(400).json({ message: 'Assignment ID is required' });
-        }
-
-        // Find the assignment
-        const assignment = await BedLog.BedLog.findById(assignment_id);
-        
-        if (!assignment) {
-            return res.status(404).json({ message: 'Bed assignment not found' });
-        }
-
-        if (assignment.status === "vacated") {
-            return res.status(400).json({ message: 'Patient already discharged from this bed' });
-        }
-
-        // Update the status to vacated and set current time
-        assignment.status = "vacated";
-        assignment.time = new Date();
-        const updatedAssignment = await assignment.save();
-
-        res.status(200).json({
-            message: 'Patient discharged successfully',
-            assignment: updatedAssignment
-        });
-    } catch (error) {
-        console.error('Error discharging patient:', error);
-        res.status(500).json({ message: 'Internal server error' });
+    const { room, bedId, patientId, nurseId } = req.body;
+    console.log("Discharge Bed Request:", req.body);
+  
+    if (!room || !bedId) {
+      return res.status(400).json({ error: 'Missing room or bed ID' });
     }
-};
+  
+    try {
+        const patient = await Patient.findById(patientId);
+        if (!patient) {
+            return res.status(404).json({ error: 'Patient not found' });
+        }
+
+        const nurse = await Employee.findOne({ _id: nurseId, role: 'nurse' });
+        if (!nurse) {
+            return res.status(404).json({ error: 'Nurse not found' });
+        }
+        const roomDoc = await Room.findOne({ room_number: room });
+        if (!roomDoc) return res.status(404).json({ error: 'Room not found' });
+  
+      const bed = roomDoc.beds.find(b =>  b.bed_number === Number(bedId));
+      if (!bed) return res.status(404).json({ error: 'Bed not found' });
+  
+      bed.status = 'vacant';
+      bed.patient_id = null;
+      bed.nurse_id = null;
+
+      await sendDischargeEmail({
+        toEmail: patient.email,
+        name: patient.name,
+        bedNo:bed.bed_number,
+        roomNumber: roomDoc.room_number,
+        role: "Patient",
+        id:patientId
+      });
+  
+      await sendDischargeEmail({
+        toEmail: nurse.email,
+        name: nurse.name,
+        bedNo:bed.bed_number,
+        roomNumber: roomDoc.room_number,
+        role: "Nurse",
+        id:nurseId
+      });
+
+  
+      
+      // Clear the patient’s bed, room, and nurse
+    
+        await Patient.findByIdAndUpdate(patientId, {
+            $unset: {
+                'patient_info.bedNo': '',
+                'patient_info.roomNo': ''
+            }
+        });
+        
+        
+       
+        await Nurse.findOneAndUpdate({ employee_id: nurseId }, {
+            $unset: {
+                assigned_bed: '',
+                assigned_room: ''
+            }
+        });
+        
+        await roomDoc.save();
+      res.status(200).json({ message: 'Bed discharged successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  };
+  
 // Function to apply insurance discount
 const applyInsuranceDiscount = (totalAmount, insuranceDetails, date) => {
     if (!insuranceDetails) {

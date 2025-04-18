@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-const PatientVitals = ({ patientId = "10013" }) => {
+const PatientVitals = () => {
   const [latestVital, setLatestVital] = useState(null);
   const [allVitals, setAllVitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const patientId = localStorage.getItem("user_id"); // 👈 Fetch from localStorage
+
 
   useEffect(() => {
     const fetchPatientVitals = async () => {
+      
+      if (!patientId) {
+        setError("No patient ID found in local storage.");
+        setLoading(false);
+        return;
+      }
+
       try {
         // Fetch the latest vital
         const latestVitalResponse = await axios.get(`${import.meta.env.VITE_API_URL}/patients/${patientId}/vitals/latest`);
@@ -21,8 +30,9 @@ const PatientVitals = ({ patientId = "10013" }) => {
         setLatestVital(latestVitalData.data);
         setAllVitals(allVitalsData.data || []);
       } catch (error) {
+
         console.error("Error fetching patient vitals:", error);
-        setError(error.message);
+        setError(error.response.data.message);
       } finally {
         setLoading(false);
       }
@@ -35,22 +45,7 @@ const PatientVitals = ({ patientId = "10013" }) => {
   useEffect(() => {
     if (!loading && !latestVital && !error) {
       // Mock latest vital
-      setLatestVital({
-        date: '2025-04-04',
-        time: '14:30',
-        bloodPressure: 120,
-        bodyTemp: 36.8,
-        pulseRate: 74,
-        breathingRate: 15
-      });
-
-      // Mock vitals history
-      setAllVitals([
-        { _id: 1, date: '2025-04-01', time: '09:15', bloodPressure: 120, bodyTemp: 37.2, pulseRate: 78, breathingRate: 16 },
-        { _id: 2, date: '2025-04-02', time: '10:30', bloodPressure: 118, bodyTemp: 36.9, pulseRate: 76, breathingRate: 15 },
-        { _id: 3, date: '2025-04-03', time: '11:45', bloodPressure: 122, bodyTemp: 37.0, pulseRate: 75, breathingRate: 16 },
-        { _id: 4, date: '2025-04-04', time: '14:30', bloodPressure: 120, bodyTemp: 36.8, pulseRate: 74, breathingRate: 15 }
-      ]);
+ 
     }
   }, [loading, latestVital, error]);
 

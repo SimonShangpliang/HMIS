@@ -50,6 +50,11 @@ export const downloadZip = async (req, res) => {
       }
       const tempDir = path.resolve(process.cwd(), 'temp');
 
+      // Create temp directory if it doesn't exist
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
       // Prepare file paths
       const zipFileName = `${diseaseName}-data-${new Date().getTime()}.zip`;
       res.setHeader('Content-Type', 'application/zip');

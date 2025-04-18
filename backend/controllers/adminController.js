@@ -351,7 +351,7 @@ export const addStaff = async (req, res) => {
         // Hash the password
         let PlainPassword=crypto.randomBytes(8).toString('base64').slice(0, 8);
         const hashedPassword = await bcrypt.hash(PlainPassword, 10);
-
+        // console.log(dept_id);
         // Create a new Employee document
         const newEmployee = new Employee({
             name,
@@ -371,11 +371,11 @@ export const addStaff = async (req, res) => {
             aadhar_number: aadhar_id,
             bank_details
         });
+        // console.log(newEmployee);
 
         // Save the employee to the database
         const savedEmployee = await newEmployee.save();
-        await sendPasswordEmail(email,PlainPassword,role);
-
+        await sendPasswordEmail(email,PlainPassword,role,savedEmployee._id);
         // Assign the employee to the appropriate role schema
         switch (role) {
             case 'doctor':
@@ -424,16 +424,67 @@ export const addStaff = async (req, res) => {
         
         const payroll = new Payroll({
             employee_id: savedEmployee._id,
-            basic_salary,
-            allowance,
-            deduction,
-            net_salary: basic_salary + allowance - deduction, // Calculate net_salary here
+            basic_salary: parseInt(basic_salary, 10),
+            allowance: parseInt(allowance, 10),
+            deduction: parseInt(deduction, 10),
+            net_salary: parseInt(basic_salary, 10) + parseInt(allowance, 10) - parseInt(deduction, 10), // Calculate net_salary here
             month_year: new Date()
         });
+        // console.log(payroll);
         await payroll.save();
         res.status(201).json({ message: 'Staff added successfully', employee: savedEmployee });
     } catch (error) {
         console.error('Error adding staff:', error);
+        res.status(500).json({ message: 'Internal server error.' });
+    }
+};
+
+export const deleteStaff = async (req, res) => {
+    try {  
+        const { id } = req.params;
+        // console.log(id);
+        res.status(200).json({ message: 'Staff deleted successfully' });
+        // Find the employee by ID
+        const employee = await Employee.findById(id);
+
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+
+        // Delete the employee record
+        await Employee.findByIdAndDelete(id);
+
+        // Delete associated role-specific record
+        switch (employee.role) {
+            case 'doctor':
+                await Doctor.findOneAndDelete({ employee_id: id });
+                break;
+            case 'nurse':
+                await Nurse.findOneAndDelete({ employee_id: id });
+                break;
+            case 'pharmacist':
+                await Pharmacist.findOneAndDelete({ employee_id: id });
+                break;
+            case 'receptionist':
+                await Receptionist.findOneAndDelete({ employee_id: id });
+                break;
+            case 'admin':
+                await Admin.findOneAndDelete({ employee_id: id });
+                break;
+            case 'pathologist':
+                await Pathologist.findOneAndDelete({ employee_id: id });
+                break;
+            case 'driver':
+                await Driver.findOneAndDelete({ employee_id: id });
+                break;
+            default:
+                break;
+        }
+
+        // Delete associated payroll record
+        await Payroll.findOneAndDelete({ employee_id: id });
+    } catch (error) {
+        console.error('Error deleting staff:', error);
         res.status(500).json({ message: 'Internal server error.' });
     }
 };

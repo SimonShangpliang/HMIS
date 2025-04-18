@@ -40,12 +40,12 @@ const createAxiosInstance = (setToken) => {
           return axiosInstance(originalRequest);
         } catch (refreshError) {
           console.error(
-            "Refresh token failed. Redirecting to login.",
+            "Refresh token failed. Redirecting to Home Page.",
             refreshError
           );
           setToken(null);
           window._authFailed = true;
-          window.location.href = "/login";
+          window.location.href = "/";
           return Promise.reject(refreshError);
         }
       }

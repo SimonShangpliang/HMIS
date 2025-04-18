@@ -17,8 +17,8 @@ const PublicData = () => {
         setDiagonses(response.data.diseases);
         console.log(response.data.diseases);
       } catch (err) {
-        console.error('Error fetching departments:', err);
-        setError('Failed to load departments. Please try again later.');
+        console.error('Error fetching diagnoses:', err);
+        setError('Failed to load diagnoses. Please try again later.');
       } finally {
         setIsLoading(false);
       }
@@ -36,6 +36,14 @@ const PublicData = () => {
   //   console.log("To:", endTime);
   //   alert(`Downloading ${disease.toUpperCase()} data from ${startTime} to ${endTime}...`);
   // };
+
+  const handleStartDateChange = (e)=>{
+    const newStartDate = e.target.value;
+    setStartTime(newStartDate);
+    if (endTime && endTime < newStartDate) {
+      setEndTime("");
+    }
+  }
 
 
   const handleDownload = async () => {
@@ -109,7 +117,7 @@ const PublicData = () => {
           <input
             type="date"
             value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            onChange={handleStartDateChange}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -120,6 +128,7 @@ const PublicData = () => {
             type="date"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
+            min={startTime}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

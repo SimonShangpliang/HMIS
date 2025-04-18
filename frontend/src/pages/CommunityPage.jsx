@@ -4,8 +4,10 @@ import { MdEmail } from 'react-icons/md';
 import { BsTelephone } from 'react-icons/bs';
 import { IoLocationOutline } from 'react-icons/io5';
 import '../styles/Additional.css';
+import { useState, useEffect } from 'react';
 
 const CommunityPage = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="page-container">
       <nav className="navbar">
@@ -14,15 +16,17 @@ const CommunityPage = () => {
           <img src="/shield-icon.png" alt="HMIS Logo" />
           </Link>
           <span>HMIS</span>
-        </div>
-        <div className="nav-links">
-          <Link to="/features">Features</Link>
-          <Link to="/community" className="active">Community</Link>
-          <Link to="/trends">Trends</Link>
-          <Link to="/about">About Us</Link>
+          </div>
+        <div className={`nav-links ${mobileMenuOpen ? 'show' : ''}`}>
+        <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/features" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+          <Link to="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
+          <Link to="/trends" onClick={() => setMobileMenuOpen(false)}>Trends</Link>
+          <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
         </div>
         <button 
           className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle mobile menu"
         >
           ☰
@@ -126,15 +130,15 @@ const CommunityPage = () => {
             <h3>GET IN TOUCH</h3>
             <p className="contact-item">
               <MdEmail className="contact-icon" />
-              contact@hmis.com
+              hmis.iitg@gmail.com
             </p>
             <p className="contact-item">
               <BsTelephone className="contact-icon" />
-              Call +1 (555) 123-4567
+              Call +91 985734581
             </p>
             <p className="contact-item">
               <IoLocationOutline className="contact-icon" />
-              123 Main Street, City, Country
+              IIT Guwahati, Assam, India
             </p>
             <div className="social-icons">
               <a href="https://facebook.com/hmis" target="_blank" rel="noopener noreferrer" aria-label="Facebook">

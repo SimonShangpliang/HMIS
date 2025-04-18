@@ -4,7 +4,6 @@ import { Home } from "lucide-react";
 import "../../styles/patient/BookedConsultations.css";
 import { useAuth } from "../../context/AuthContext";
 
-
 import axios from "axios";
 
 export const fetchConsultationsByPatientId = async (patientId, axiosInstance) => {
@@ -120,9 +119,9 @@ const BookedConsultation = () => {
         const result = await deleteConsultationById(cancelConsultationId);
 
         if (result.success) {
-          setConsultations((prev) => prev.filter((c) => c.id !== cancelConsultationId));
           setShowCancelModal(false);
           setCancelConsultationId(null);
+          window.location.reload();
         } else {
           setShowCancelModal(false);
           setErrorMessage(result.message);
@@ -142,45 +141,80 @@ const BookedConsultation = () => {
     <div className="consultations-page">
       <main className="consultations-content">
         <header className="consultations-header">
-          <h2>Patient Consultations</h2>
-          <Home className="home-icon" />
+          <h2>Booked Consultations</h2>
+          <Home className="home-icon cursor-pointer" onClick={() => navigate("/patient/profile")}/>
         </header>
         <section className="consultations-list">
           {consultations.length > 0 ? (
-            consultations.map((consult) => (
-              <div key={consult.id} className="consultation-card">
-                <span className="consult-date">{consult.date}</span>
-                <span className="consult-doctor">{consult.doctor}</span>
-                <span className="consult-location">{consult.location}</span>
-                <button
-                  onClick={() => handleCancel(consult.id)}
-                  disabled={consult.status === "cancelled"}
-                  className={`px-4 py-2 rounded-md font-medium transition 
-    ${consult.status === "cancelled"
-                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                      : "bg-red-600 text-white hover:bg-red-700"}`}
-                  title={consult.status === "cancelled" ? "Already cancelled" : "Cancel consultation"}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleReschedule(consult)}
-                  disabled={consult.status === "completed"}
-                  className={`px-4 py-2 rounded-md font-medium transition
-    ${consult.status === "completed"
-                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                      : "bg-green-600 text-white hover:bg-green-700"}`}
-                  title={consult.status === "completed" ? "Completed consultations cannot be rescheduled" : "Reschedule consultation"}
-                >
-                  Reschedule
-                </button>
-
+            <>
+              <div className="consultation-card header">
+                <span className="consult-date">Date</span>
+                <span className="consult-doctor">Doctor</span>
+                <span className="consult-location">Location</span>
+                <span className="consult-status">Status</span>
+                <span className="consult-actions">Actions</span>
               </div>
-            ))
+
+              {consultations.map((consult) => (
+                <div key={consult.id} className="consultation-card">
+                  <span className="consult-date">{consult.date}</span>
+                  <span className="consult-doctor">{consult.doctor}</span>
+                  <span className="consult-location">{consult.location}</span>
+                  <span className="consult-status">{consult.status}</span>
+                  <div className="consult-actions">
+                  <button
+                    onClick={() => handleCancel(consult.id)}
+                    disabled={consult.status === "cancelled" || consult.status === "ongoing"}
+                    className={`px-4 py-2 rounded-md font-medium transition ${
+                      consult.status === "cancelled" || consult.status === "ongoing"
+                        ? "disabled cursor-not-allowed"
+                        : "cancel-active hover:bg-red-700"
+                    }`}
+                    title={
+                      consult.status === "cancelled"
+                        ? "Already cancelled"
+                        : consult.status === "ongoing"
+                        ? "Ongoing consultation cannot be cancelled"
+                        : "Cancel consultation"
+                    }
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleReschedule(consult)}
+                    disabled={
+                      consult.status === "completed" ||
+                      consult.status === "cancelled" ||
+                      consult.status === "ongoing"
+                    }
+                    className={`px-4 py-2 rounded-md font-medium transition ${
+                      consult.status === "completed" ||
+                      consult.status === "cancelled" ||
+                      consult.status === "ongoing"
+                        ? "disabled cursor-not-allowed"
+                        : "reschedule-active hover:bg-green-700"
+                    }`}
+                    title={
+                      consult.status === "completed"
+                        ? "Completed consultations cannot be rescheduled"
+                        : consult.status === "cancelled"
+                        ? "Cancelled consultations cannot be rescheduled"
+                        : consult.status === "ongoing"
+                        ? "Ongoing consultations cannot be rescheduled"
+                        : "Reschedule consultation"
+                    }
+                  >
+                    Reschedule
+                  </button>
+                  </div>
+                </div>
+              ))}
+            </>
           ) : (
             <p className="no-data">No Consultations Available</p>
           )}
         </section>
+
       </main>
 
       {/* Custom Modal for Reschedule Confirmation */}

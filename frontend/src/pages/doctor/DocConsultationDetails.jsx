@@ -4,7 +4,7 @@ import DocConsultationReports from "./DocConsultationReports";
 import DocConsultationPrescriptions from "./DocConsultationPrescriptions";
 import DocConsultationBills from "./DocConsultationBills";
 import DocConsultationRemarksDiagnosis from "./DocConsultationRemarksDiagnosis";
-
+import axios from "axios";
 const DocConsultationDetails = () => {
   const [consultation, setConsultation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,18 +14,18 @@ const DocConsultationDetails = () => {
 
   // Mock data fetching function for a specific consultation
   const fetchConsultationById = async (consultationId) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: consultationId,
-          date: "2025-04-03",
-          doctorName: "Dr. Smith",
-          location: "Room 101",
-          details: "Checkup",
-          patientId: patientId
-        });
-      }, 500);
-    });
+    // console.log(consultationId);
+    try {
+      const response = await axios.get(`http://localhost:5000/api/consultations/${consultationId}/view`, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      return response.data; // Assuming your backend sends the consultation in the response body
+    } catch (error) {
+      console.error("Error fetching consultation details:", error);
+      return null; // Fallback: return null if there's an error
+    }
   };
 
   useEffect(() => {
@@ -58,6 +58,8 @@ const DocConsultationDetails = () => {
         return <div>Select a tab to view details</div>;
     }
   };
+  
+  
 
   return (
     <div className="p-6 bg-white">
@@ -77,9 +79,9 @@ const DocConsultationDetails = () => {
                 <div className="p-3">Location</div>
               </div>
               <div className="grid grid-cols-3 bg-gray-800 text-white">
-                <div className="p-4">{consultation.date}</div>
-                <div className="p-4">{consultation.doctorName}</div>
-                <div className="p-4">{consultation.location}</div>
+                <div className="p-4">{consultation.consultation.date}</div>
+                <div className="p-4">{consultation.consultation.doctor.name}</div>
+                <div className="p-4">{consultation.consultation.location}</div>
               </div>
             </div>
 

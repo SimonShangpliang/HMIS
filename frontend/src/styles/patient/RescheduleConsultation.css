@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;700&display=swap');
 
+.react-datepicker__day.outside-month {
+  color: grey !important;
+}
+
 /* Reschedule Consultation Styles */
 .reschedule-container {
   font-family: 'Product Sans', sans-serif;

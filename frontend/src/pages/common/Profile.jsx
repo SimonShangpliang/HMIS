@@ -12,6 +12,7 @@ const ProfileDashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState(null);
   const [error, setError] = useState(null);
+  const [isImageUploading, setIsImageUploading] = useState(false);
 
   // List of authorized roles
   const authorizedRoles = ["doctor", "receptionist", "nurse", "admin", "pathologist", "pharmacist"];
@@ -51,6 +52,7 @@ const ProfileDashboard = () => {
 
     const formData = new FormData();
     formData.append("profile_pic", file);
+    setIsImageUploading(true); // start loading
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/common/upload-photo/${userData._id}`,
@@ -69,6 +71,9 @@ const ProfileDashboard = () => {
 
     } catch (error) {
       console.error("Error uploading profile picture:", error);
+    }
+    finally {
+      setIsImageUploading(false); // stop loading
     }
   };
 
@@ -366,37 +371,61 @@ const ProfileDashboard = () => {
           <div className="space-y-8">
             {/* Profile Header */}
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-32 relative">
-                <div className="absolute -bottom-12 left-8">
-                  <div className="relative">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-32 relative">
+              <div className="absolute -bottom-16 left-8">
+                <div className="relative group">
+                  <div
+                    className={`w-32 h-32 rounded-full bg-white p-1 shadow-lg transition-transform duration-300 ease-in-out ${
+                      isImageUploading ? "cursor-not-allowed opacity-70" : "group-hover:scale-105"
+                    }`}
+                  >
                     <div
-                      className="w-24 h-24 rounded-full bg-white p-1 shadow-lg transition-transform duration-300 ease-in-out hover:scale-105"
+                      className={`w-full h-full rounded-full bg-gray-200 flex items-center justify-center overflow-hidden relative ${
+                        isImageUploading ? "cursor-not-allowed" : "cursor-pointer"
+                      }`}
+                      onClick={() => {
+                        if (!isImageUploading) fileInputRef.current.click();
+                      }}
                     >
-                      <div
-                        className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center overflow-hidden cursor-pointer"
-                        onClick={handleEditClick}
-                      >
-                        {previewImage || userData.profile_pic ? (
-                          <img
-                            src={previewImage || userData.profile_pic}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User size={40} className="text-gray-400" />
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleProfilePicChange}
-                      />
+                      {/* Spinner */}
+                      {isImageUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                          <div className="w-6 h-6 border-2 border-t-white border-r-white border-b-transparent border-l-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+
+                      {/* Profile Image or Default Icon */}
+                      {previewImage || userData?.profile_pic ? (
+                        <img
+                          src={previewImage || userData.profile_pic}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User size={40} className="text-gray-400" />
+                      )}
+
+                      {/* Hover text */}
+                      {!isImageUploading && (
+                        <div className="absolute inset-0 bg-black bg-opacity-30 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          Click to change
+                        </div>
+                      )}
                     </div>
+
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleProfilePicChange}
+                    />
                   </div>
                 </div>
               </div>
+            </div>
+
+
 
               <div className="pt-16 pb-6 px-8 flex justify-between items-center">
                 <div>

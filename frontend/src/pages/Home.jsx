@@ -54,6 +54,7 @@ const Home = () => {
           <span>HMIS</span>
         </div>
         <div className={`nav-links ${mobileMenuOpen ? 'show' : ''}`}>
+        <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
           <Link to="/features" onClick={() => setMobileMenuOpen(false)}>Features</Link>
           <Link to="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
           <Link to="/trends" onClick={() => setMobileMenuOpen(false)}>Trends</Link>

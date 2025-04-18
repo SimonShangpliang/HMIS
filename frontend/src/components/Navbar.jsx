@@ -14,7 +14,7 @@ const Navbar = ({ toggleSidebar,isSidebarOpen }) => {
       setRole(null);
       setUser(null);
       localStorage.clear();
-      navigate("/login");
+      navigate("/");
     } catch (err) {
       console.error("Logout failed", err);
     }
@@ -44,7 +44,7 @@ const Navbar = ({ toggleSidebar,isSidebarOpen }) => {
         {user ? (
           <>
             <span className="text-sm sm:text-base">
-              Welcome, <span className="font-semibold">{user.name}</span> ({user.role})
+              Welcome, <span className="font-semibold">{user.name}</span> {user.role}
             </span>
             <button 
               onClick={handleLogout} 
@@ -54,8 +54,8 @@ const Navbar = ({ toggleSidebar,isSidebarOpen }) => {
             </button>
           </>
         ) : (
-          <Link to="/login" className="text-gray-300 hover:text-white transition">
-            Login
+          <Link to="/" className="text-gray-300 hover:text-white transition">
+            Home
           </Link>
         )}
       </div>

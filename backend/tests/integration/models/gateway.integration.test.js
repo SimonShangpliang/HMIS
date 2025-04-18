@@ -8,6 +8,7 @@ import { connectDB, disconnectDB } from '../../helpers/db.js'
 
 let app
 let server
+let port
 
 describe('PaymentGateway API Integration', () => {
   beforeAll(async () => {
@@ -70,7 +71,8 @@ describe('PaymentGateway API Integration', () => {
       }
     })
     
-    server = app.listen(4001)
+    server = app.listen(0)
+    port = server.address().port
   })
   
   afterAll(async () => {

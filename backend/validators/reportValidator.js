@@ -17,4 +17,4 @@ export const ReportJoiSchema = Joi.object({
         .messages({
             'string.pattern.base': 'createdBy must be a valid ObjectId'
         }),
-});
+}).unknown(true);

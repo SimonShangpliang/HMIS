@@ -1,8 +1,13 @@
 import { Consultation } from '../models/consultation.js';
 import Medicine from '../models/inventory.js';
+import { Prescription } from '../models/consultation.js';
 import Patient from '../models/patient.js';
+import BillModels from '../models/bill.js';
+const { Bill, BillItem} = BillModels;
+
 import { Doctor, Receptionist } from '../models/staff.js';
 import Employee from '../models/employee.js'; 
+import{appointmentEmail,updateAppointmentEmail} from "../config/sendMail.js";
 
 // dummy consultation remove after integrated with db
 const dummy = {
@@ -113,12 +118,30 @@ export const bookConsultation = async (req, res) => {
       booked_date_time,
       reason,
       created_by, // This is employee._id (number)
-      appointment_type
+      appointment_type,
+      status
     } = req.body;
+
+    // Validate booking date is not in the past
+    const bookingDate = new Date(booked_date_time);
+    const now = new Date();
+    
+    if (bookingDate <= now) {
+      return res.status(400).json({
+        message: 'Cannot book consultation in the past',
+        currentTime: now,
+        attemptedBookingTime: bookingDate
+      });
+    }
 
     // Check if patient exists
     const patient = await Patient.findById(patient_id);
     if (!patient) return res.status(404).json({ message: 'Patient not found' });
+
+    const doctor = await Doctor.findOne({ employee_id: doctor_id });
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found for the given employee ID' });
+    }
 
     // Find receptionist document by employee_id
     const receptionist = await Receptionist.findOne({ employee_id: created_by });
@@ -134,10 +157,21 @@ export const bookConsultation = async (req, res) => {
       reason,
       created_by: receptionist._id, // Use receptionist's MongoDB ObjectId
       appointment_type,
-      status: 'scheduled'
+      status: status
     });
 
+    await appointmentEmail({
+            toEmail: patient.email,
+            patient_name: patient.name,
+            patient_id,
+            doctor_id,
+            reason,
+            appointment_type,
+            booked_date_time
+    });
     await newConsultation.save();
+    
+
 
     res.status(201).json({
       message: 'Consultation booked successfully',
@@ -154,13 +188,25 @@ export const rescheduleConsultation = async (req, res) => {
     const { consultationId } = req.params;
     const { new_booked_date_time } = req.body;
 
+    // Validate new booking date is not in the past
+    const newBookingDate = new Date(new_booked_date_time);
+    const now = new Date();
+    
+    if (newBookingDate <= now) {
+      return res.status(400).json({
+        message: 'Cannot reschedule consultation to a past date/time',
+        currentTime: now,
+        attemptedRescheduleTime: newBookingDate
+      });
+    }
+
     const consultation = await Consultation.findById(consultationId);
     if (!consultation) {
       return res.status(404).json({ message: 'Consultation not found' });
     }
 
-    consultation.booked_date_time = new Date(new_booked_date_time);
-    consultation.status = 'scheduled';
+    consultation.booked_date_time = newBookingDate;
+    consultation.status = 'requested';
 
     await consultation.save();
 
@@ -187,17 +233,36 @@ export const fetchConsultationById = async (req, res) => {
     let consultation = await Consultation.findById(id)
       .populate("diagnosis")
       .populate({
-        path: "prescription",
+        path: 'prescription',
         populate: {
-          path: "entries.medicine_id",  // Accessing 'medicine_id' in 'entries'
-          model: "Medicine",  // Explicitly specifying the Medicine model to populate
-          select: "med_name"  // Select only the 'med_name' field from Medicine schema
+          path: 'entries.medicine_id',
+          model: 'Medicine',
+          select: 'med_name' // fetch only medicine name
         }
       })
-      .populate("reports")
-      .populate("bill_id")
-      .populate("created_by", "name role");
+      .populate({
+        path : 'reports',
+        model : 'Report',
+        select : 'status reportText title description createdBy createdAt updatedAt',
+      })
+      console.log(JSON.stringify(consultation.prescription, null, 2));
 
+
+      // Populate entries.medicine_id manually for each prescription
+      if (consultation && consultation.prescription) {
+        await Promise.all(
+          consultation.prescription.map(async (prescription) => {
+            await Prescription.populate(prescription, {
+              path: 'entries.medicine_id',
+              model: 'Medicine',
+              select: 'med_name'
+            });
+          })
+        );
+      }
+
+
+    // If consultation not found, return dummy data
     if (!consultation) {
       const dummy = {
         id: "dummy-id",
@@ -277,9 +342,13 @@ export const fetchBillByConsultationId = async (req, res) => {
     const consultation = await Consultation.findById(consultationId);
     let bill;
 
+    console.log(consultation);
+
     if (consultation && consultation.bill_id) {
       bill = await Bill.findById(consultation.bill_id);
+      console.log("Bill fetched:", bill);
     }
+
 
     // Use dummyBill if no valid bill found
     const isDummy = !bill;
@@ -297,6 +366,7 @@ export const fetchBillByConsultationId = async (req, res) => {
       id: sourceBill._id || consultationId,
       totalAmount: sourceBill.total_amount,
       paymentStatus: sourceBill.payment_status,
+      generation_date: sourceBill.generation_date,
       breakdown
     };
     // ==========================================================
@@ -316,11 +386,12 @@ export const fetchBillByConsultationId = async (req, res) => {
 export const fetchPrescriptionByConsultationId = async (req, res) => {
   try {
     console.log("Received request for prescription.");
-    const { consultationId: id } = req.params;
+    const { id } = req.params;
+    console.log("Received request for consultation" + id);
 
     const consultation = await Consultation.findById(id)
       .populate({
-        path: 'prescription',
+        path: 'prescription', 
         populate: {
           path: 'entries.medicine_id',
           model: 'Medicine',
@@ -380,8 +451,10 @@ export const fetchPrescriptionByConsultationId = async (req, res) => {
  */
 export const fetchDiagnosisByConsultationId = async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log("Received request for consultation" + id);
+    const { consultationId } = req.params;
+    const id = consultationId ; 
+    console.log("Received request for consultation2" + id);
+
     const consultation = await Consultation.findById(id)
       .populate("doctor_id", "name")
       .populate("diagnosis");
@@ -420,8 +493,24 @@ export const updateConsultation = async (req, res) => {
       reason, 
       appointment_type, 
       updated_by,
-      status
+      status,
+      bill_id
     } = req.body;
+
+    // Validate new booking date is not in the past if provided
+    if (booked_date_time) {
+      const newBookingDate = new Date(booked_date_time);
+      const now = new Date();
+      
+      if (newBookingDate <= now) {
+        return res.status(400).json({
+          message: 'Cannot update consultation to a past date/time',
+          currentTime: now,
+          attemptedUpdateTime: newBookingDate
+        });
+      }
+    }
+
     const consultation = await Consultation.findById(consultationId);
     if (!consultation) {
       return res.status(404).json({ message: 'Consultation not found' });
@@ -434,10 +523,25 @@ export const updateConsultation = async (req, res) => {
     if (appointment_type) consultation.appointment_type = appointment_type;
     if (updated_by) consultation.updated_by = updated_by;
     if (status)consultation.status=status
-    // Ensure status is always updated when date changes
-   
-
+    if (bill_id)consultation.bill_id=bill_id
     await consultation.save();
+
+    // Ensure status is always updated when date changes
+     // Fetch patient details
+     const patient = await Patient.findById(consultation.patient_id);
+     if (!patient) {
+       return res.status(404).json({ message: 'Patient not found' });
+     }
+    await updateAppointmentEmail({
+      toEmail: patient.email,
+      name: patient.name,
+      patient_id: consultation.patient_id,
+      doctor_id: consultation.doctor_id,
+      reason: consultation.reason,
+      appointment_type: consultation.appointment_type,
+      booked_date_time: consultation.booked_date_time
+    });
+
 
     res.json({
       message: 'Consultation updated successfully',

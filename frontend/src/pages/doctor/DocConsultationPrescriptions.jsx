@@ -1,35 +1,74 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const DocConsultationPrescriptions = ({ consultationId }) => {
-  const [prescriptions, setPrescriptions] = useState([]);
+  const [doctorId, setDoctorId] = useState("10008"); // Replace with dynamic doctor ID
+
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [editPrescription, setEditPrescription] = useState({ medicine: "", dosage: "", frequency: "" });
+  const [entries, setEntries] = useState([]);
+  const [prescription, setPrescription] = useState([]);
+
+  const handleSaveAll = async () => {
+    const updatedPrescription = {
+      ...prescription,
+      entries: entries
+    };
+    console.log("hello" ) ; 
+    console.log("Updated Prescription:", updatedPrescription);
+
+    // for(entry of updatedPrescription.entries){
+    //   if(entry.medicine_id === ""){
+    //         // save to database 
+
+    //   }
+    // }
+   
+    
+    try {
+      await axios.post(`http://localhost:5000/api/doctors/updateConsultations/${consultationId}/addprescriptions`, 
+ updatedPrescription,
+        
+        {
+          params: { doctor: doctorId },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      
+      setEditing(false);
+    } catch (err) {
+      // console.error("Failed to update prescription:", err);
+      console.error("Failed to update prescription:", err.response?.data || err.message);
+    }
+  };
+
+  const handleDeleteEntry = (index) => {
+    const updated = entries.filter((_, i) => i !== index);
+    setEntries(updated);
+  };
+
+  const handleEntryChange = (index, field, value) => {
+    const updated = [...entries];
+    updated[index][field] = value;
+    setEntries(updated);
+  };
 
   // Mock data fetching function
   const fetchPrescriptionsByConsultationId = async (consultationId) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 1,
-            medicine: "Paracetamol",
-            dosage: "500mg",
-            frequency: "Every 6 hours",
-            duration: "5 days",
-            notes: "Take after meals"
-          },
-          {
-            id: 2,
-            medicine: "Vitamin C",
-            dosage: "1000mg",
-            frequency: "Once daily",
-            duration: "30 days",
-            notes: "Take with water"
-          }
-        ]);
-      }, 500);
-    });
+    try {
+      const response = await axios.get(`http://localhost:5000/api/consultations/${consultationId}/view`, {
+        // params: { id: consultationId }, // Pass query param here
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      setPrescription(response.data.consultation.prescription[0]);
+      return response.data.consultation.prescription[0].entries; // Assuming your backend sends the consultation in the response body
+    } catch (error) {
+      console.error("Error fetching consultation details:", error);
+      return null; // Fallback: return null if there's an error
+    }
   };
 
   useEffect(() => {
@@ -37,7 +76,7 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
       setLoading(true);
       try {
         const data = await fetchPrescriptionsByConsultationId(consultationId);
-        setPrescriptions(data);
+        setEntries(data);
         setLoading(false);
       } catch (error) {
         console.error("Error loading prescriptions:", error);
@@ -48,22 +87,23 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
     loadPrescriptions();
   }, [consultationId]);
 
-  const handleEdit = () => {
-    setEditing(true);
-    // Set default values for editing
-    if (prescriptions.length > 0) {
-      setEditPrescription({
-        medicine: "PCM",
-        dosage: "100mg",
-        frequency: "every day"
-      });
-    }
-  };
+
 
   const handleSave = () => {
     setEditing(false);
     // In a real app, you would send the updated prescription to the server
-    console.log("Saving prescription:", editPrescription);
+  };
+
+  const handleAddEntry = () => {
+    const newEntry = {
+      medicine: "",
+      dosage: "",
+      frequency: "",
+      duration: "",
+      quantity: 0,
+      dispensed_qty: 0,
+    };
+    setEntries([...entries, newEntry]);
   };
 
   return (
@@ -75,94 +115,105 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading prescriptions...</p>
         </div>
-      ) : editing ? (
-        <div className="border rounded p-4 bg-gray-50">
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Medicine</label>
-            <input 
-              type="text" 
-              value={editPrescription.medicine}
-              onChange={(e) => setEditPrescription({...editPrescription, medicine: e.target.value})}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Dosage</label>
-            <input 
-              type="text" 
-              value={editPrescription.dosage}
-              onChange={(e) => setEditPrescription({...editPrescription, dosage: e.target.value})}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Frequency</label>
-            <input 
-              type="text" 
-              value={editPrescription.frequency}
-              onChange={(e) => setEditPrescription({...editPrescription, frequency: e.target.value})}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-          <div className="text-right">
-            <button 
-              onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      ) : prescriptions.length > 0 ? (
-        <div className="space-y-4">
-          <div className="flex justify-end mb-2">
-            <button 
-              onClick={handleEdit}
-              className="px-4 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 text-sm"
-            >
-              Edit
-            </button>
-          </div>
-          {prescriptions.map((prescription) => (
-            <div key={prescription.id} className="border rounded p-4 bg-gray-50">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-gray-500 text-sm">Medicine</p>
-                  <p className="font-medium">{prescription.medicine}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-sm">Dosage</p>
-                  <p className="font-medium">{prescription.dosage}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-sm">Frequency</p>
-                  <p className="font-medium">{prescription.frequency}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-sm">Duration</p>
-                  <p className="font-medium">{prescription.duration}</p>
-                </div>
-              </div>
-              {prescription.notes && (
-                <div className="mt-2 pt-2 border-t">
-                  <p className="text-gray-500 text-sm">Notes</p>
-                  <p>{prescription.notes}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
       ) : (
-        <div className="flex flex-col items-center py-4">
-          <p className="text-gray-500 mb-4">No prescriptions available</p>
-          <button 
-            onClick={handleEdit}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Add Prescription
-          </button>
-        </div>
-      )}
+        <>
+          <div className="mt-4">
+            <button
+              onClick={handleAddEntry}
+              className="bg-green-600 text-white px-4 py-2 rounded mr-2"
+            >
+              Add Entry
+            </button>
+            <button
+              onClick={handleSaveAll}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Save All
+            </button>
+          </div>
+      
+          {entries.length > 0 ? (
+            <div className="space-y-4 mt-4">
+              {entries.map((entry, index) => (
+                <div key={index} className="border rounded p-4 bg-gray-50">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-500 text-sm">Medicine</p>
+                      <input
+                        type="text"
+                        value={entry.medicine_id?.med_name  }
+                        onChange={(e) => handleEntryChange(index, 'medicine', e.target.value)}
+                        placeholder="Medicine"
+                        className="font-medium"
+                      />
+                    </div>
+      
+                    <div>
+                      <p className="text-gray-500 text-sm">Dosage</p>
+                      <input
+                        type="text"
+                        value={entry.dosage}
+                        onChange={(e) => handleEntryChange(index, 'dosage', e.target.value)}
+                        placeholder="Dosage"
+                        className="font-medium"
+                      />
+                    </div>
+      
+                    <div>
+                      <p className="text-gray-500 text-sm">Frequency</p>
+                      <input
+                        type="text"
+                        value={entry.frequency}
+                        onChange={(e) => handleEntryChange(index, 'frequency', e.target.value)}
+                        placeholder="Frequency"
+                        className="font-medium"
+                      />
+                    </div>
+      
+                    <div>
+                      <p className="text-gray-500 text-sm">Duration</p>
+                      <input
+                        type="text"
+                        value={entry.duration}
+                        onChange={(e) => handleEntryChange(index, 'duration', e.target.value)}
+                        placeholder="Duration"
+                        className="font-medium"
+                      />
+                    </div>
+      
+                    <div className="flex items-center justify-start space-x-2 col-span-2">
+                      <button
+                        onClick={() => handleEntryChange(index)}
+                        className="bg-green-400 text-white px-1.5 py-0.5 w-10 min-w-0 rounded hover:bg-green-600 text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEntry(index)}
+                        className="bg-red-400 text-white px-1.5 py-0.5 w-12 min-w-0 rounded hover:bg-red-600 text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+      
+                  {entry.notes && (
+                    <div className="mt-2 pt-2 border-t">
+                      <p className="text-gray-500 text-sm">Notes</p>
+                      <p>{entry.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-4">
+              <p className="text-gray-500 mb-4">No prescriptions available</p>
+            </div>
+          )}
+        </>
+      )
+      }
     </div>
   );
 };

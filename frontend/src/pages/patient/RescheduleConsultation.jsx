@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate, useParams } from "react-router-dom";
 import "../../styles/patient/RescheduleConsultation.css";
+
+const CONFIRMATION = "Consultation rescheduled successfully";
 
 export const rescheduleConsultation = async (consultationId, newDateTime) => {
   try {
@@ -29,9 +31,8 @@ export const rescheduleConsultation = async (consultationId, newDateTime) => {
 
 const RescheduleConsultation = () => {
   // states
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedSlot, setSelectedSlot] = useState("");
   const [tempDate, setTempDate] = useState(new Date());
+  const [selectedSlot, setSelectedSlot] = useState("");
 
   // inbuilt
   const { consultationId } = useParams();
@@ -51,8 +52,8 @@ const RescheduleConsultation = () => {
     "4:00 PM - 5:00 PM",
   ];
 
-  const handleApply = () => {
-    setSelectedDate(tempDate);
+  const handleCancel = () => {
+    navigate("/patient/booked-consultation");
   };
 
   const handleClear = () => {
@@ -67,33 +68,33 @@ const RescheduleConsultation = () => {
       return;
     }
 
-    // Extract start time from selected slot
+    setShowConfirmModal(true);
+  };
+
+  const confirmReschedule = async () => {
+    setShowConfirmModal(false);
+  
+    // Parse slot time
     const [startTime] = selectedSlot.split(" - ");
     const [time, meridiem] = startTime.split(" ");
     let [hours, minutes] = time.split(":").map(Number);
-
+  
     if (meridiem === "PM" && hours < 12) hours += 12;
     if (meridiem === "AM" && hours === 12) hours = 0;
-
-    const newDateTime = new Date(selectedDate);
+  
+    // Use tempDate for the date portion
+    const newDateTime = new Date(tempDate); // ✅ Use tempDate
     newDateTime.setHours(hours, minutes, 0, 0);
-
+  
     const result = await rescheduleConsultation(consultationId, newDateTime);
-
     if (result.success) {
-      alert("Consultation successfully rescheduled!");
-      navigate("/patient/booked-consultation");
+      setErrorMessage(CONFIRMATION);
+      setShowErrorModal(true);
     } else {
-      setErrorMessage(result.error); // 🆕 Set backend error message
+      setErrorMessage(result.error);
       setShowErrorModal(true);
     }
-  };
-
-  const confirmReschedule = () => {
-    setShowConfirmModal(false);
-    alert(`Consultation rescheduled successfully!\nNew Date: ${selectedDate.toDateString()}\nTime: ${selectedSlot}`);
-    navigate("/patient/booked-consultation");
-  };
+  };  
 
   return (
     <div className="reschedule-container">
@@ -106,10 +107,13 @@ const RescheduleConsultation = () => {
           onChange={(date) => setTempDate(date)}
           inline
           calendarClassName="custom-calendar"
+          dayClassName={(date) =>
+            date.getMonth() !== tempDate.getMonth() ? "outside-month" : ""
+          }
         />
         <div className="calendar-buttons" style={{ display: "flex", justifyContent: "space-between", gap: "10px" }}>
-          <button className="apply-button" onClick={handleApply}>Apply</button>
-          <button className="clear-button" onClick={handleClear}>Clear</button>
+          <button className="apply-button" onClick={handleClear}>Clear</button>
+          <button className="clear-button" onClick={handleCancel}>Cancel</button>
         </div>
       </div>
 
@@ -132,7 +136,7 @@ const RescheduleConsultation = () => {
             <h3>Confirm Reschedule</h3>
             <p>
               Are you sure you want to reschedule your consultation to <br />
-              <strong>{selectedDate.toDateString()}</strong> at <strong>{selectedSlot}</strong>?
+              <strong>{tempDate.toDateString()}</strong> at <strong>{selectedSlot}</strong>?
             </p>
             <div className="modal-actions">
               <button className="cancel-modal-btn" onClick={() => setShowConfirmModal(false)}>
@@ -150,10 +154,15 @@ const RescheduleConsultation = () => {
       {showErrorModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Error!</h3>
+            <h3>{errorMessage === CONFIRMATION ? "Success!" : "Error!"}</h3>
             <p>{errorMessage}</p>
             <div className="modal-actions">
-              <button className="confirm-modal-btn" onClick={() => setShowErrorModal(false)}>
+              <button className="confirm-modal-btn" onClick={() => {
+                setShowErrorModal(false)
+                if(errorMessage === CONFIRMATION) {
+                  navigate("/patient/booked-consultation");
+                }
+              }}>
                 OK
               </button>
             </div>

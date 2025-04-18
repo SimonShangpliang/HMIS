@@ -30,7 +30,6 @@ import cron from "node-cron";
 import initializeDailyOccupancy from "./controllers/analytics.controller.js";
 import insuranceRoutes from "./routes/insurance.routes.js";
 dotenv.config();
-
 const app = express();
 app.use(cookieParser()); // This enables req.cookies
 app.use(express.json());
@@ -49,8 +48,10 @@ app.get("/", (req, res) => {
   res.send("Backend is running with ES Modules");
 });
 
+
 app.get("/test", (req, res) => {
-  res.send("Frontend Connected to Backend");
+ 
+    res.send("Frontend Connected to Backend");
 });
 
 cron.schedule("0 0 * * *", async () => {

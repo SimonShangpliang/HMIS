@@ -22,7 +22,7 @@ router.put('/update/:consultationId', updateConsultation);
 // GET:
 router.get('/:consultationId/diagnosis', fetchConsultationById);
 router.get('/:consultationId/view', fetchConsultationById);
-router.get('/:consultationId/bill', fetchConsultationById);
+router.get('/:consultationId/bill', fetchBillByConsultationId);
 router.get('/:consultationId/prescription', fetchConsultationById);
 
 

@@ -3,43 +3,53 @@ import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import { MdEmail } from 'react-icons/md';
 import { BsTelephone } from 'react-icons/bs';
 import { IoLocationOutline } from 'react-icons/io5';
+import '../styles/policy.css';
+import { useState, useEffect } from 'react';
 
 const PrivacyPolicyPage = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   return (
     <div className="page-container">
       <nav className="navbar">
         <div className="logo">
+        <Link to="/">
           <img src="/shield-icon.png" alt="HMIS Logo" />
+          </Link>
           <span>HMIS</span>
         </div>
-        <div className="nav-links">
-          <Link to="/features">Features</Link>
-          <Link to="/community">Community</Link>
-          <Link to="/trends">Trends</Link>
-          <Link to="/about">About Us</Link>
+        <div className={`nav-links ${mobileMenuOpen ? 'show' : ''}`}>
+        <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/features" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+          <Link to="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
+          <Link to="/trends" onClick={() => setMobileMenuOpen(false)}>Trends</Link>
+          <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
         </div>
         <button 
           className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle mobile menu"
         >
           ☰
         </button>
       </nav>
 
-      <header className="page-header policy-header">
+      <header className="policy-page-header">
         <h1>Privacy Policy</h1>
         <p>Last Updated: April 1, 2025</p>
       </header>
 
-      <section className="policy-content">
-        <div className="policy-container">
-          <div className="policy-section">
+      <section className="policy-page-content">
+        <div className="policy-page-container-box">
+          <div className="policy-page-section">
             <h2>1. Introduction</h2>
             <p>At HMIS ("we," "our," or "us"), we are committed to protecting your privacy and the security of your personal and health information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Hospital Management Information System, website, and related services (collectively, the "Services").</p>
             <p>We adhere to all applicable data protection laws, including HIPAA (Health Insurance Portability and Accountability Act) in the United States and GDPR (General Data Protection Regulation) in the European Union, and other regional privacy laws as applicable.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>2. Information We Collect</h2>
             
             <h3>2.1. Information You Provide to Us</h3>
@@ -62,7 +72,7 @@ const PrivacyPolicyPage = () => {
             </ul>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>3. How We Use Your Information</h2>
             <p>We use the information we collect for the following purposes:</p>
             <ul>
@@ -78,7 +88,7 @@ const PrivacyPolicyPage = () => {
             </ul>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>4. How We Share Your Information</h2>
             <p>We may share your information in the following circumstances:</p>
             <ul>
@@ -91,7 +101,7 @@ const PrivacyPolicyPage = () => {
             <p>We do not sell your personal information to third parties for their marketing purposes.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>5. Data Security</h2>
             <p>We implement appropriate technical and organizational measures to protect your information from unauthorized access, disclosure, alteration, and destruction. Our security practices include:</p>
             <ul>
@@ -104,7 +114,7 @@ const PrivacyPolicyPage = () => {
             <p>While we strive to protect your information, no method of transmission over the Internet or electronic storage is 100% secure. We cannot guarantee absolute security.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>6. Your Rights and Choices</h2>
             <p>Depending on your location, you may have certain rights regarding your personal information:</p>
             <ul>
@@ -117,27 +127,27 @@ const PrivacyPolicyPage = () => {
             <p>To exercise these rights, please contact us at privacy@hmis.com. We will respond to your request within the timeframe required by applicable law.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>7. Data Retention</h2>
             <p>We retain your information for as long as necessary to fulfill the purposes outlined in this Privacy Policy, unless a longer retention period is required or permitted by law. For patient health information, we follow applicable medical record retention laws and regulations.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>8. International Data Transfers</h2>
             <p>We may transfer, store, and process your information in countries other than your own. When we transfer information across borders, we implement appropriate safeguards to protect your information in compliance with applicable laws.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>9. Children's Privacy</h2>
             <p>Our Services are not directed to children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>10. Changes to This Privacy Policy</h2>
             <p>We may update this Privacy Policy from time to time. We will notify you of any significant changes by posting the new policy on this page and updating the "Last Updated" date. We encourage you to review this Privacy Policy periodically.</p>
           </div>
 
-          <div className="policy-section">
+          <div className="policy-page-section">
             <h2>11. Contact Us</h2>
             <p>If you have any questions or concerns about this Privacy Policy or our privacy practices, please contact us at:</p>
             <p>HMIS Privacy Office<br />

@@ -16,7 +16,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       const res = await login({ email, password, userType });
 
@@ -32,7 +31,7 @@ const Login = () => {
       setTimeout(() => {
         if (userType === "patient") navigate("/patient/profile");
         else navigate(`/${res.data.role}/profile`);
-      }, 1500);
+      }, 200);
     } catch (err) {
       console.error("Login failed", err);
       setMessage({

@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
-import { Consultation, Prescription } from '../models/consultation.js';
+import { Consultation, Prescription, Report } from '../models/consultation.js';
 import Diagnosis from '../models/diagnosis.js'; 
 import Patient from '../models/patient.js';
+import Medicine from '../models/inventory.js';
 
 // Utility to format a 30-min time slot
 const formatTimeSlot = (start) => {
@@ -13,8 +14,11 @@ const formatTimeSlot = (start) => {
 
 // GET /doctor/appointments
 export const fetchAppointments = async (req, res) => {
+  console.log("requested" ) ; 
+
   try {
-    const doctorId = req.user?.doctor_id;
+    const doctorId = req.query.user;
+    console.log(doctorId);
     if (!doctorId) {
       return res.status(400).json({ error: "Doctor ID missing in token" });
     }
@@ -28,13 +32,14 @@ export const fetchAppointments = async (req, res) => {
       return res.status(404).json({ message: "No appointments found" });
     }
 
+
     const appointments = consultations.map((c) => ({
       id: c._id,
       patientName: c.patient_id?.name || 'Unknown',
       timeSlot: formatTimeSlot(c.booked_date_time),
+      patientId: c.patient_id?._id ,
       isDone: c.status === 'completed'
     }));
-
     res.json(appointments);
   } catch (err) {
     console.error("Error in fetchAppointments:", err);
@@ -77,16 +82,15 @@ export const updateAppointments = async (req, res) => {
 
 export const fetchPatientConsultations = async (req, res) => {
   try {
-    const doctor_id = req.user?.doctor_id;
-    const { patientId } = req.params;
-    
-    if (!doctor_id) {
+    const { doctorId , patientId } = req.query;
+
+    if (!doctorId) {
       return res.status(400).json({ error: "Doctor ID missing in token" });
     }
     
     if (!patientId) {
       return res.status(400).json({
-        error: 'Patient ID is required'
+        error: 'Patient ID is required' 
       });
     }
     
@@ -95,9 +99,17 @@ export const fetchPatientConsultations = async (req, res) => {
     };
     
     const consultations = await Consultation.find(query)
-      .populate('doctor_id', 'name specialization')
-      .populate('prescription')
-      .sort({ booked_date_time: -1 });
+  .populate({
+    path: 'doctor_id',
+    populate: {
+      path: 'employee_id',
+      select: 'name' // this gets the name from Employee
+    },
+    select: 'specialization employee_id' // select doctor fields (include employee_id so nested populate works)
+  })
+  .populate('prescription')
+  .sort({ booked_date_time: -1 });
+
     
     if (!consultations.length) {
       return res.status(404).json({ message: "No consultations found for this patient" });
@@ -115,7 +127,8 @@ export const fetchPatientConsultations = async (req, res) => {
 
 export const fetchPatientProgress = async (req, res) => {
   try {
-    const doctor_id = req.user?.doctor_id;
+    // const doctor_id = req.user?.doctor_id;
+    const doctor_id = "10008" ; 
     const { patientId } = req.params;
     
     if (!doctor_id) {
@@ -270,9 +283,20 @@ export const addRemarks = async (req, res) => {
 
 export const addPrescription = async (req, res) => {
   try {
-    const doctor_id = req.user?.doctor_id;
+    // const doctor_id = req.user?.doctor_id;
+    
+
     const { consultationId } = req.params;
-    const { prescriptionData } = req.body;
+    const doctor_id = req.query.doctor?.replace(/"/g, ''); // to remove the quotes if you're passing "10008"
+
+    const prescriptionData  = req.body;
+
+    console.log(consultationId) ; 
+    console.log(doctor_id) ; 
+    console.log(prescriptionData) ;
+    console.log("prescription:", JSON.stringify(prescriptionData, null, 2));
+
+
     
     if (!doctor_id) {
       return res.status(400).json({ error: "Doctor ID missing in token" });
@@ -285,28 +309,62 @@ export const addPrescription = async (req, res) => {
     // Find the consultation and verify doctor has permission
     const consultation = await Consultation.findOne({
       _id: consultationId,
-      doctor_id: doctor_id
+      // doctor_id: doctor_id
     });
     
     if (!consultation) {
       return res.status(404).json({ error: "Consultation not found or access denied" });
     }
+
+        // Process each entry: ensure medicine_id is present
+        const processedEntries = [];
+
+        for (const entry of prescriptionData.entries) {
+          let medId = entry.medicine_id;
+    
+          // If medicine_id is missing, try to create or fetch by name
+          if (!medId && entry.medicine) {
+            let medicine = await Medicine.findOne({ med_name: entry.medicine });
+    
+            if (!medicine) {
+              medicine = await Medicine.create({ med_name: entry.medicine });
+            }
+    
+            medId = medicine._id;
+          }
+    
+          if (!medId) {
+            continue
+            // return res.status(400).json({ error: `Missing medicine_id or valid medicine name for entry.` });
+          }
+    
+          processedEntries.push({
+            medicine_id: medId,
+            dosage: entry.dosage,
+            frequency: entry.frequency,
+            duration: entry.duration,
+            quantity: entry.quantity,
+            dispensed_qty: entry.dispensed_qty
+          });
+        }
     
     // Create a new prescription
     const newPrescription = new Prescription({
       prescriptionDate: new Date(),
       status: "pending",
-      entries: prescriptionData.entries
+      entries: processedEntries
     });
+
+
     
     const savedPrescription = await newPrescription.save();
     
     // Update consultation with new prescription
     const updatedConsultation = await Consultation.findByIdAndUpdate(
       consultationId,
-      { $push: { prescription: savedPrescription._id } },
+      { prescription: [savedPrescription._id] }, // replaces the whole array
       { new: true }
-    );
+    ).populate('prescription');
     
     res.status(200).json({
       success: true,
@@ -320,6 +378,64 @@ export const addPrescription = async (req, res) => {
     });
   }
 };
+
+export const addReport = async (req, res) => {
+  try {
+    const { consultationId } = req.params;
+    const doctor_id = req.query.doctor?.replace(/"/g, '');
+    const reportData = req.body;
+
+    if (!doctor_id) {
+      return res.status(400).json({ error: "Doctor ID missing in token" });
+    }
+
+    if (!consultationId || !reportData.title || !reportData.status) {
+      return res.status(400).json({ error: "Consultation ID, report title, and status are required" });
+    }
+
+    // 1. Find the consultation
+    const consultation = await Consultation.findOne({
+      _id: consultationId,
+      doctor_id: doctor_id
+    });
+
+    if (!consultation) {
+      return res.status(404).json({ error: "Consultation not found or access denied" });
+    }
+
+    console.log("reportData:", JSON.stringify(reportData, null, 2));
+
+    // 2. Save report in Report collection
+    const newReport = new Report({
+      status: reportData.status,
+      reportText: reportData.reportText,
+      title: reportData.title,
+      description: reportData.description,
+      createdAt: new Date(),
+    });
+
+    const savedReport = await newReport.save();
+
+    // 3. Embed saved report (entire object) into consultation.reports
+    consultation.reports.push(savedReport.toObject()); // or a subset if you don't want to embed _id
+
+    const updatedConsultation = await consultation.save();
+
+    res.status(200).json({
+      success: true,
+      data: updatedConsultation
+    });
+
+  } catch (error) {
+    console.error('Error adding report:', error);
+    res.status(500).json({
+      error: 'Server error while adding report',
+      message: error.message
+    });
+  }
+};
+
+
 
 // Update a specific diagnosis by ID
 export const updateDiagnosisById = async (req, res) => {
@@ -372,14 +488,36 @@ export const updateDiagnosisById = async (req, res) => {
     });
   }
 };
+// write a function to fetch all diagonis available in diagnosis collection
+
+
+export const fetchAllDiagnoses = async (req, res) => {
+  try {
+    const diagnoses = await Diagnosis.find({});
+    res.status(200).json({
+      success: true,
+      data: diagnoses
+    });
+  } catch (error) {
+    console.error('Error fetching all diagnoses:', error);
+    res.status(500).json({
+      error: 'Server error while fetching diagnoses',
+      message: error.message
+    });
+  }
+};
 
 // Update all diagnoses for a consultation (replace with new one)
 export const updateAllDiagnosis = async (req, res) => {
   try {
-    const doctor_id = req.user?.doctor_id;
+    // const doctor_id = req.user?.doctor_id;
+    const doctor_id = "10008"; 
     const { consultationId } = req.params;
-    const { diagnosis } = req.body; // Array of diagnosis strings
-    
+    const diagnosisList  = req.body; // Array of diagnosis strings
+    const diagnosis = diagnosisList; 
+    console.log(consultationId) ; 
+    console.log(diagnosisList ) ;
+
     if (!doctor_id) {
       return res.status(400).json({ error: "Doctor ID missing in token" });
     }
@@ -397,13 +535,21 @@ export const updateAllDiagnosis = async (req, res) => {
     if (!consultation) {
       return res.status(404).json({ error: "Consultation not found or access denied" });
     }
+
+  
     
     // Create and save diagnosis objects
     const diagnosisPromises = diagnosis.map(async (diagnosisName) => {
       if (typeof diagnosisName !== 'string' || !diagnosisName.trim()) {
         throw new Error('All diagnosis entries must be non-empty strings');
       }
-      const newDiagnosis = new Diagnosis({ name: diagnosisName });
+    
+      // Check if diagnosis already exists
+      let existing = await Diagnosis.findOne({ name: diagnosisName.trim() });
+      if (existing) return existing;
+    
+      // Create a new one if it doesn't exist
+      const newDiagnosis = new Diagnosis({ name: diagnosisName.trim() });
       return await newDiagnosis.save();
     });
     
@@ -415,7 +561,7 @@ export const updateAllDiagnosis = async (req, res) => {
       consultationId,
       { diagnosis: diagnosisIds }, // Complete replacement
       { new: true }
-    );
+    ).populate('diagnosis');
     
     res.status(200).json({
       success: true,
@@ -432,10 +578,13 @@ export const updateAllDiagnosis = async (req, res) => {
 
 export const updateRemark = async (req, res) => {
   try {
-    const doctor_id = req.user?.doctor_id;
+    // const doctor_id = req.user?.doctor_id;
+    const doctor_id = "10008";
     const { consultationId } = req.params;
-    const { remark } = req.body;
+    const remark = req.body.message;
     
+    console.log(consultationId) ;
+    console.log(remark) ;
     if (!doctor_id) {
       return res.status(400).json({ error: "Doctor ID missing in token" });
     }

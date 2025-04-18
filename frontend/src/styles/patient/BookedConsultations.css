@@ -31,9 +31,15 @@
   margin-top: 20px;
 }
 
+.consultation-card.header {
+  font-weight: bold;
+}
+
 /* Consultation Card (Slab Style) */
 .consultation-card {
-  display: flex;
+  text-transform: capitalize;
+  display: grid;
+  grid-template-columns: 2fr 2fr 2fr 2fr 3fr; /* Adjust fractions based on desired widths */
   justify-content: space-between;
   align-items: center;
   background-color: #1c2b3a;
@@ -67,31 +73,28 @@
 }
 
 /* Action Buttons */
-.cancel-btn, .reschedule-btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background 0.3s ease;
+.reschedule-active {
+  background-color: #396d68 !important; /* Green */
+  color: #ffffff !important;
 }
 
-.cancel-btn {
+.reschedule-active:hover {
+  background-color: #264946;
+}
+
+.cancel-active {
   background-color: #d9534f;
-  color: white;
+  color: #fff;
 }
 
-.cancel-btn:hover {
+.cancel-active:hover {
   background-color: #c9302c;
+  color: #fff;
 }
 
-.reschedule-btn {
-  background-color: #396d68;
-  color: white;
-}
-
-.reschedule-btn:hover {
-  background-color: #396d68;
+.disabled {
+  background-color: #d1d5db !important; /* Gray */
+  color: #4b5563 !important;
 }
 
 /* No Data Message */
@@ -168,5 +171,18 @@
 }
 
 .confirm-modal-btn:hover {
-  background-color: #5bc0de;
+  background-color: #264946;
+}
+
+
+.consult-actions {
+  display: flex;
+  gap: 6px; /* adds spacing between buttons */
+  justify-content: center;
+  align-items: center;
+}
+
+.consult-actions button {
+  padding: 6px 10px; /* slightly reduced padding */
+  font-size: 17px;
 }

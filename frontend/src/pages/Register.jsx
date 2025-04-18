@@ -100,7 +100,7 @@ const RegisterPage = () => {
           password: '',
           confirmPassword: ''
         });
-        navigate("/patient/profile")
+        navigate("/login")
       } else {
         setMessage({ type: 'error', text: data.message || 'Registration failed' });
       }

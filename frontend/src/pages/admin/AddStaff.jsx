@@ -7,7 +7,7 @@ const EmployeeForm = () => {
     email: '',
     profile_pic: '',
     role: '',
-    department_id: '',
+    dept_id: '',
     phone_number: '',
     emergency_phone: '',
     address: '',
@@ -36,6 +36,8 @@ const EmployeeForm = () => {
   const [profilePreview, setProfilePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState(null);
+
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Fetch departments when component mounts
   useEffect(() => {
@@ -106,6 +108,20 @@ const EmployeeForm = () => {
     }
   };
 
+  const removeStaff = async (id) => {
+    try {
+      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/admin/delete-staff/${id}`);
+      setMessage({ type: 'success', text: response.data.message || 'Staff removed successfully!' });
+      setModalOpen(false);
+      
+    } catch (error) {
+      console.error('Error removing staff:', error);
+      setMessage({ type: 'error', text: 'Failed to remove staff. Please try again.' });
+    } finally {
+      setTimeout(() => setMessage(null), 5000);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
@@ -139,7 +155,7 @@ const EmployeeForm = () => {
         email: '',
         profile_pic: '',
         role: '',
-        department_id: '',
+        dept_id: '',
         phone_number: '',
         emergency_phone: '',
         address: '',
@@ -182,6 +198,41 @@ const EmployeeForm = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {modalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Remove Staff</h2>
+            <p className="mb-4">Enter the ID of the staff member you want to remove:</p>
+            <input
+              type="text"
+              id="remove_staff_id"
+              name="remove_staff_id"
+              placeholder="Staff ID"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 mb-4"
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md mr-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const staffId = document.getElementById('remove_staff_id').value;
+                  if (staffId) {
+                    removeStaff(staffId);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-md"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+          
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Add Staff</h1>
       {message && (
         <div className={`mb-6 p-4 rounded-md ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -388,8 +439,8 @@ const EmployeeForm = () => {
               <label htmlFor="department" className={labelStyles}>Department:</label>
               <select
                 id="department"
-                name="department_id"
-                value={formData.department_id}
+                name="dept_id"
+                value={formData.dept_id}
                 onChange={handleChange}
                 className={selectStyles}
                 required
@@ -551,6 +602,13 @@ const EmployeeForm = () => {
               className={`px-8 py-3 bg-teal-600 text-white font-medium rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 uppercase ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {isSubmitting ? 'SUBMITTING...' : 'SUBMIT'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="ml-4 px-8 py-3 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 uppercase"
+            >
+              Remove Staff
             </button>
           </div>
         </div>

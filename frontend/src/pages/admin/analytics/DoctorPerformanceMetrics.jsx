@@ -10,12 +10,16 @@ import {
 } from 'chart.js';
 import { FaFilter, FaHospital, FaUserMd, FaBuilding, FaChartLine } from 'react-icons/fa';
 import { BiLineChart } from 'react-icons/bi';
+import axios from 'axios';
+
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 const DoctorPerformanceMetrics = () => {
   // State variables
   const [activeTab, setActiveTab] = useState('doctor'); // 'doctor' or 'department'
+  const [error, setError] = useState(null); // error state
+
   
   // Doctor view states
   const [doctorData, setDoctorData] = useState([]);
@@ -74,62 +78,112 @@ const DoctorPerformanceMetrics = () => {
     }
   }, [filteredDoctorData, filteredDepartmentData, xAxisDivider, yAxisDivider, activeTab]);
 
-  // Fetch doctor performance data
-  const fetchDoctorPerformanceData = async () => {
+  // Add this effect to refetch data when thresholds change
+  useEffect(() => {
+    if (!loading && (doctorData.length > 0 || departmentData.length > 0)) {
+      // Instead of immediately fetching new data, first update local categorization
+      if (activeTab === 'doctor') {
+        categorizeDoctorsByQuadrant();
+      } else {
+        categorizeDepartmentsByQuadrant();
+      }
+      
+      // Then fetch new data from backend with a slight delay to avoid too many requests
+      const timer = setTimeout(() => {
+        fetchDoctorPerformanceData();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [xAxisDivider, yAxisDivider]);
+
+
+
+  useEffect(() => {
+    // Initialize with safe values when data is empty
+    if (filteredDoctorData.length === 0 && filteredDepartmentData.length === 0) {
+      setYAxisDivider(5); // Default value
+    }
+  }, []);
+    // Fetch doctor performance data
+    const fetchDoctorPerformanceData = async () => {
     setLoading(true);
     try {
-      // In a real implementation, this would be an API call
-      // const response = await fetch('/api/doctor-performance');
-      // const data = await response.json();
+
+      // console.log("Fetching doctor performance data with thresholds:", { 
+      //   ratingThreshold: xAxisDivider, 
+      //   consultationThreshold: yAxisDivider 
+      // });
+
+      // Fetch doctor data
+      const doctorResponse = await axios.post(`${import.meta.env.VITE_API_URL}/analytics/doc-performance`, {
+        ratingThreshold: xAxisDivider,
+        consultationThreshold: yAxisDivider
+      });
       
-      // Simulated data based on the database schema
-      setTimeout(() => {
-        const docData = generateMockDoctorData();
-        setDoctorData(docData);
-        setFilteredDoctorData(docData);
-        
-        // Generate department data by aggregating doctor data
-        const deptData = generateDepartmentData(docData);
-        setDepartmentData(deptData);
-        setFilteredDepartmentData(deptData);
-        
-        setLoading(false);
-      }, 800);
+
+      // console.log("Doctor API Response:", doctorResponse.data);
+
+      // Set doctor data from API response
+      setDoctorData(doctorResponse.data.graphData.map(doc => ({
+        doctorId: doc.doctorId,
+        name: doc.doctorName || `Doctor ${doc.doctorId}`, // Fallback to ID if name is not available
+        departmentId: doc.department_id || "",
+        departmentName: doc.department || "Unknown Department",
+        avgRating: doc.rating,
+        consultationCount: doc.consultations
+      })));
+      
+      
+      // Set doctor quadrant data - ensure it's in the right format
+      setDoctorQuadrantData({
+        topRight: doctorResponse.data.highConsHighRating || [],
+        topLeft: doctorResponse.data.highConsLowRating || [],
+        bottomRight: doctorResponse.data.lowConsHighRating || [],
+        bottomLeft: doctorResponse.data.lowConsLowRating || []
+      });
+      
+      // Fetch department data
+      const deptResponse = await axios.post(`${import.meta.env.VITE_API_URL}/analytics/dept-performance`, {
+        ratingThreshold: xAxisDivider,
+        consultationThreshold: yAxisDivider
+      });
+      
+      // Set department data from API response
+      setDepartmentData(deptResponse.data.graphData.map(dept => ({
+        departmentId: dept.departmentId || "",
+        departmentName: dept.departmentName || "Unknown",
+        avgRating: dept.avgRating || 0,
+        consultationCount: dept.consultations || 0,
+        doctorCount: dept.doctorCount || 0
+      })));
+      
+      // Set department quadrant data - ensure it's in the right format
+      setDepartmentQuadrantData({
+        topRight: Array.isArray(deptResponse.data.highConsHighRating) 
+          ? deptResponse.data.highConsHighRating 
+          : (deptResponse.data.highConsHighRating?.items || []),
+        topLeft: Array.isArray(deptResponse.data.highConsLowRating)
+          ? deptResponse.data.highConsLowRating
+          : (deptResponse.data.highConsLowRating?.items || []),
+        bottomRight: Array.isArray(deptResponse.data.lowConsHighRating)
+          ? deptResponse.data.lowConsHighRating
+          : (deptResponse.data.lowConsHighRating?.items || []),
+        bottomLeft: Array.isArray(deptResponse.data.lowConsLowRating)
+          ? deptResponse.data.lowConsLowRating
+          : (deptResponse.data.lowConsLowRating?.items || [])
+      });
+      
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching doctor performance data:', error);
+      console.error('Error fetching performance data:', error);
+      setError(error.response?.data?.error || 'Failed to fetch data');
       setLoading(false);
     }
   };
 
-  // Generate department data by aggregating doctor data
-  const generateDepartmentData = (doctorData) => {
-    const departments = {};
-    
-    doctorData.forEach(doctor => {
-      if (!departments[doctor.departmentId]) {
-        departments[doctor.departmentId] = {
-          departmentId: doctor.departmentId,
-          departmentName: doctor.departmentName,
-          totalRating: 0,
-          totalConsultations: 0,
-          doctorCount: 0,
-          doctors: []
-        };
-      }
-      
-      departments[doctor.departmentId].totalRating += doctor.avgRating;
-      departments[doctor.departmentId].totalConsultations += doctor.consultationCount;
-      departments[doctor.departmentId].doctorCount += 1;
-      departments[doctor.departmentId].doctors.push(doctor);
-    });
-    
-    // Calculate averages
-    return Object.values(departments).map(dept => ({
-      ...dept,
-      avgRating: dept.totalRating / dept.doctorCount,
-      consultationCount: dept.totalConsultations
-    }));
-  };
+
+  
 
   // Filter doctor data based on doctor name and department
   const filterDoctorData = () => {
@@ -153,15 +207,20 @@ const DoctorPerformanceMetrics = () => {
   // Filter department data based on department name
   const filterDepartmentData = () => {
     let filtered = [...departmentData];
-    
     if (departmentNameFilter) {
       filtered = filtered.filter(dept => 
+        dept.departmentName && 
         dept.departmentName.toLowerCase().includes(departmentNameFilter.toLowerCase())
       );
     }
-    
     setFilteredDepartmentData(filtered);
+    
+    // If no departments match, show a message instead of blank screen
+    if (filtered.length === 0 && departmentNameFilter) {
+      console.log(`No departments match filter: "${departmentNameFilter}"`);
+    }
   };
+  
 
   // Categorize doctors by quadrant
   const categorizeDoctorsByQuadrant = () => {
@@ -257,7 +316,7 @@ const DoctorPerformanceMetrics = () => {
       if (mouseY >= chartArea.top && mouseY <= chartArea.bottom) {
         const pixelRatio = 1 - (mouseY - chartArea.top) / (chartArea.bottom - chartArea.top);
         const newValue = yScale.min + pixelRatio * (yScale.max - yScale.min);
-        setYAxisDivider(Math.max(newValue, 0));
+        setYAxisDivider(Math.max(Math.round(newValue), 0));
       }
     }
   };
@@ -274,6 +333,13 @@ const DoctorPerformanceMetrics = () => {
     isDraggingY.current = false;
   };
 
+
+  const maxConsultationCount = Math.max(
+    ...filteredDoctorData.map(d => d.consultationCount || 0),
+    ...filteredDepartmentData.map(d => d.consultationCount || 0),
+    10 // Fallback minimum
+  ) + 10;
+  
   // Prepare chart data for doctor view
   const doctorChartData = {
     datasets: [
@@ -281,10 +347,16 @@ const DoctorPerformanceMetrics = () => {
         data: filteredDoctorData.map(doctor => ({
           x: doctor.avgRating,
           y: doctor.consultationCount,
-          doctor: doctor // Store the full doctor object for tooltip
+          doctor: {
+            doctorId: doctor.doctorId,
+            doctorName: doctor.name,
+            department: doctor.departmentName || "Unknown Department",
+            rating: doctor.avgRating,
+            consultations: doctor.consultationCount
+          }
         })),
         backgroundColor: filteredDoctorData.map(doctor => {
-          // Color based on quadrant
+          // Color based on quadrant - ensure this matches the backend logic
           if (doctor.avgRating >= xAxisDivider && doctor.consultationCount >= yAxisDivider) {
             return 'rgba(0, 255, 0, 0.6)'; // Top Right - Green
           } else if (doctor.avgRating < xAxisDivider && doctor.consultationCount >= yAxisDivider) {
@@ -308,7 +380,13 @@ const DoctorPerformanceMetrics = () => {
         data: filteredDepartmentData.map(dept => ({
           x: dept.avgRating,
           y: dept.consultationCount,
-          department: dept // Store the full department object for tooltip
+          department: {
+            departmentId: dept.departmentId,
+            departmentName: dept.departmentName,
+            avgRating: dept.avgRating,
+            consultations: dept.consultationCount,
+            doctorCount: dept.doctorCount
+          } // Store the full department object for tooltip
         })),
         backgroundColor: filteredDepartmentData.map(dept => {
           // Color based on quadrant
@@ -357,7 +435,7 @@ const DoctorPerformanceMetrics = () => {
           }
         },
         min: 0,
-        suggestedMax: Math.max(...filteredDoctorData.map(d => d.consultationCount), 10) + 1
+        suggestedMax: Math.max(...filteredDoctorData.map(d => d.consultationCount), yAxisDivider + 5)
       }
     },
     plugins: {
@@ -365,16 +443,16 @@ const DoctorPerformanceMetrics = () => {
         display: false 
       },
       tooltip: {
-        enabled : true,
+        enabled: true,
         callbacks: {
           label: function(context) {
             const doctor = context.raw.doctor;
             return [
-              `Doctor: ${doctor.name}`,
+              `Doctor: ${doctor.doctorName}`,
               `ID: ${doctor.doctorId}`,
-              `Department: ${doctor.departmentName}`,
-              `Rating: ${doctor.avgRating.toFixed(2)}`,
-              `Consultations: ${doctor.consultationCount}`
+              `Department: ${doctor.department}`,
+              `Rating: ${doctor.rating.toFixed(2)}`,
+              `Consultations: ${doctor.consultations}`
             ];
           },
           title: () => ''
@@ -419,7 +497,7 @@ const DoctorPerformanceMetrics = () => {
           }
         },
         min: 0,
-        suggestedMax: Math.max(...filteredDepartmentData.map(d => d.consultationCount), 10) + 1
+        suggestedMax: Math.max(...filteredDepartmentData.map(d => d.consultationCount), yAxisDivider + 5)
       }
     },
     plugins: {
@@ -427,7 +505,7 @@ const DoctorPerformanceMetrics = () => {
         display: false 
       },
       tooltip: {
-        enabled : true,
+        enabled: true,
         callbacks: {
           label: function(context) {
             const dept = context.raw.department;
@@ -435,7 +513,7 @@ const DoctorPerformanceMetrics = () => {
               `Department: ${dept.departmentName}`,
               `ID: ${dept.departmentId}`,
               `Avg Rating: ${dept.avgRating.toFixed(2)}`,
-              `Total Consultations: ${dept.consultationCount}`,
+              `Total Consultations: ${dept.consultations}`,
               `Doctor Count: ${dept.doctorCount}`
             ];
           },
@@ -453,12 +531,12 @@ const DoctorPerformanceMetrics = () => {
     onClick: handleDepartmentClick
   };
 
-  // Render quadrant data table for doctors
+  // Update doctor quadrant table rendering 
   const renderDoctorQuadrantTable = (quadrantName, doctors, colorClass) => {
     return (
       <div className={`p-4 rounded-lg ${colorClass}`}>
-        <h3 className="font-semibold text-lg mb-2">{quadrantName} ({doctors.length})</h3>
-        {doctors.length > 0 ? (
+        <h3 className="font-semibold text-lg mb-2">{quadrantName} ({doctors?.length || 0})</h3>
+        {doctors && doctors.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white">
               <thead>
@@ -472,10 +550,18 @@ const DoctorPerformanceMetrics = () => {
               <tbody>
                 {doctors.map((doctor, index) => (
                   <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                    <td className="px-2 py-1 whitespace-nowrap text-sm">{doctor.name}</td>
-                    <td className="px-2 py-1 whitespace-nowrap text-sm">{doctor.departmentName}</td>
-                    <td className="px-2 py-1 whitespace-nowrap text-sm">{doctor.avgRating.toFixed(2)}</td>
-                    <td className="px-2 py-1 whitespace-nowrap text-sm">{doctor.consultationCount}</td>
+                    <td className="px-2 py-1 whitespace-nowrap text-sm">
+                      {doctor.DOCTOR || doctor.name || `Doctor ${doctor.doctorId}`}
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap text-sm">
+                      {doctor.DEPARTMENT || doctor.departmentName || "Unknown"}
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap text-sm">
+                      {doctor.RATING || (doctor.avgRating ? doctor.avgRating.toFixed(2) : "0.00")}
+                    </td>
+                    <td className="px-2 py-1 whitespace-nowrap text-sm">
+                      {doctor.CONSULTATIONS || doctor.consultationCount || 0}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -488,12 +574,12 @@ const DoctorPerformanceMetrics = () => {
     );
   };
 
-  // Render quadrant data table for departments
+// Update department quadrant table rendering (around line 326)
 const renderDepartmentQuadrantTable = (quadrantName, departments, colorClass) => {
   return (
     <div className={`p-4 rounded-lg ${colorClass}`}>
-      <h3 className="font-semibold text-lg mb-2">{quadrantName} ({departments.length})</h3>
-      {departments.length > 0 ? (
+      <h3 className="font-semibold text-lg mb-2">{quadrantName} ({departments?.length || 0})</h3>
+      {departments && departments.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full bg-white">
             <thead>
@@ -507,10 +593,10 @@ const renderDepartmentQuadrantTable = (quadrantName, departments, colorClass) =>
             <tbody>
               {departments.map((dept, index) => (
                 <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.departmentName}</td>
-                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.avgRating.toFixed(2)}</td>
-                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.consultationCount}</td>
-                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.doctorCount}</td>
+                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.DEPARTMENT || dept.departmentName || "Unknown"}</td>
+                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.AVG_RATING || (dept.avgRating ? dept.avgRating.toFixed(2) : "0.00")}</td>
+                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.CONSULTATIONS || dept.consultationCount || 0}</td>
+                  <td className="px-2 py-1 whitespace-nowrap text-sm">{dept.DOCTOR_COUNT || dept.doctorCount || 0}</td>
                 </tr>
               ))}
             </tbody>
@@ -522,6 +608,7 @@ const renderDepartmentQuadrantTable = (quadrantName, departments, colorClass) =>
     </div>
   );
 };
+
 
 // Completing the component's return statement
 return (
@@ -621,7 +708,7 @@ return (
               <input
                 type="range"
                 min="0"
-                max="10"
+                max={maxConsultationCount}
                 step="1"
                 value={yAxisDivider}
                 onChange={(e) => setYAxisDivider(parseInt(e.target.value))}
@@ -664,7 +751,11 @@ return (
                   <div 
                     className="absolute left-0 right-0 h-px bg-gray-400 border-dashed cursor-ns-resize"
                     style={{ 
-                      top: `${100 - ((yAxisDivider / (Math.max(...filteredDoctorData.map(d => d.consultationCount)) + 1)) * 100)}%`,
+                      top: `${chartRef.current ? 
+                        (chartRef.current.chartArea.bottom - 
+                         (yAxisDivider - chartRef.current.scales.y.min) / 
+                         (chartRef.current.scales.y.max - chartRef.current.scales.y.min) * 
+                         chartRef.current.chartArea.height) : 0}px`,
                     }}
                     onMouseDown={() => handleDividerMouseDown('y')}
                   ></div>
@@ -744,7 +835,7 @@ return (
               <input
                 type="range"
                 min="0"
-                max="10"
+                max={maxConsultationCount}
                 step="1"
                 value={yAxisDivider}
                 onChange={(e) => setYAxisDivider(parseInt(e.target.value))}
@@ -787,7 +878,11 @@ return (
                   <div 
                     className="absolute left-0 right-0 h-px bg-gray-400 border-dashed cursor-ns-resize"
                     style={{ 
-                      top: `${100 - ((yAxisDivider / (Math.max(...filteredDepartmentData.map(d => d.consultationCount)) + 1)) * 100)}%`,
+                      top: `${chartRef.current ? 
+                        (chartRef.current.chartArea.bottom - 
+                         (yAxisDivider - chartRef.current.scales.y.min) / 
+                         (chartRef.current.scales.y.max - chartRef.current.scales.y.min) * 
+                         chartRef.current.chartArea.height) : 0}px`,
                     }}
                     onMouseDown={() => handleDividerMouseDown('y')}
                   ></div>
@@ -830,90 +925,90 @@ return (
 
 
 // Mock data generation function
-const generateMockDoctorData = () => {
-  // Sample doctor data
-  return [
-    {
-      doctorId: 101,
-      name: "Dr. Smith",
-      departmentId: "D001",
-      departmentName: "Cardiology",
-      avgRating: 4.3,
-      consultationCount: 3
-    },
-    {
-      doctorId: 102,
-      name: "Dr. Johnson",
-      departmentId: "D002",
-      departmentName: "Neurology",
-      avgRating: 4.0,
-      consultationCount: 2
-    },
-    {
-      doctorId: 103,
-      name: "Dr. Brown",
-      departmentId: "D003",
-      departmentName: "Orthopedics",
-      avgRating: 2.5,
-      consultationCount: 2
-    },
-    {
-      doctorId: 104,
-      name: "Dr. Davis",
-      departmentId: "D001",
-      departmentName: "Cardiology",
-      avgRating: 4.8,
-      consultationCount: 5
-    },
-    {
-      doctorId: 105,
-      name: "Dr. Wilson",
-      departmentId: "D004",
-      departmentName: "Pediatrics",
-      avgRating: 3.7,
-      consultationCount: 4
-    },
-    {
-      doctorId: 106,
-      name: "Dr. Martinez",
-      departmentId: "D005",
-      departmentName: "Dermatology",
-      avgRating: 4.5,
-      consultationCount: 1
-    },
-    {
-      doctorId: 107,
-      name: "Dr. Anderson",
-      departmentId: "D002",
-      departmentName: "Neurology",
-      avgRating: 3.2,
-      consultationCount: 3
-    },
-    {
-      doctorId: 108,
-      name: "Dr. Taylor",
-      departmentId: "D006",
-      departmentName: "Psychiatry",
-      avgRating: 4.1,
-      consultationCount: 6
-    },
-    {
-      doctorId: 109,
-      name: "Dr. Thomas",
-      departmentId: "D003",
-      departmentName: "Orthopedics",
-      avgRating: 2.9,
-      consultationCount: 1
-    },
-    {
-      doctorId: 110,
-      name: "Dr. Jackson",
-      departmentId: "D007",
-      departmentName: "Oncology",
-      avgRating: 4.7,
-      consultationCount: 4
-    }
-  ];
-};
+// const generateMockDoctorData = () => {
+//   // Sample doctor data
+//   return [
+//     {
+//       doctorId: 101,
+//       name: "Dr. Smith",
+//       departmentId: "D001",
+//       departmentName: "Cardiology",
+//       avgRating: 4.3,
+//       consultationCount: 3
+//     },
+//     {
+//       doctorId: 102,
+//       name: "Dr. Johnson",
+//       departmentId: "D002",
+//       departmentName: "Neurology",
+//       avgRating: 4.0,
+//       consultationCount: 2
+//     },
+//     {
+//       doctorId: 103,
+//       name: "Dr. Brown",
+//       departmentId: "D003",
+//       departmentName: "Orthopedics",
+//       avgRating: 2.5,
+//       consultationCount: 2
+//     },
+//     {
+//       doctorId: 104,
+//       name: "Dr. Davis",
+//       departmentId: "D001",
+//       departmentName: "Cardiology",
+//       avgRating: 4.8,
+//       consultationCount: 5
+//     },
+//     {
+//       doctorId: 105,
+//       name: "Dr. Wilson",
+//       departmentId: "D004",
+//       departmentName: "Pediatrics",
+//       avgRating: 3.7,
+//       consultationCount: 4
+//     },
+//     {
+//       doctorId: 106,
+//       name: "Dr. Martinez",
+//       departmentId: "D005",
+//       departmentName: "Dermatology",
+//       avgRating: 4.5,
+//       consultationCount: 1
+//     },
+//     {
+//       doctorId: 107,
+//       name: "Dr. Anderson",
+//       departmentId: "D002",
+//       departmentName: "Neurology",
+//       avgRating: 3.2,
+//       consultationCount: 3
+//     },
+//     {
+//       doctorId: 108,
+//       name: "Dr. Taylor",
+//       departmentId: "D006",
+//       departmentName: "Psychiatry",
+//       avgRating: 4.1,
+//       consultationCount: 6
+//     },
+//     {
+//       doctorId: 109,
+//       name: "Dr. Thomas",
+//       departmentId: "D003",
+//       departmentName: "Orthopedics",
+//       avgRating: 2.9,
+//       consultationCount: 1
+//     },
+//     {
+//       doctorId: 110,
+//       name: "Dr. Jackson",
+//       departmentId: "D007",
+//       departmentName: "Oncology",
+//       avgRating: 4.7,
+//       consultationCount: 4
+//     }
+//   ];
+// };
 
 export default DoctorPerformanceMetrics;

@@ -44,7 +44,6 @@ export const addMedicine = async (req, res) => {
     res.status(201).json({ message: 'Medicine added successfully', data: savedMedicine });
 
   } catch (error) {
-    console.error('Error adding medicine:', error);
     res.status(500).json({ error: 'Failed to add medicine', details: error.message });
   }
 };
@@ -73,7 +72,6 @@ export const addInventoryLog = async (req, res) => {
     res.status(201).json({ message: 'Inventory log added successfully', data: savedLog });
 
   } catch (error) {
-    console.error('Error adding inventory log:', error);
     res.status(500).json({ error: 'Failed to add inventory log', details: error.message });
   }
 };
@@ -99,7 +97,6 @@ export const addItemToBill = async (req, res) => {
 
     res.status(200).json({ message: 'Item added to bill', bill });
   } catch (error) {
-    console.error('Error adding item to bill:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -113,7 +110,6 @@ export const addItemToBill = async (req, res) => {
   
       res.status(201).json({ message: 'Bill created successfully', bill: newBill });
     } catch (error) {
-      console.error(error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   };
@@ -127,7 +123,6 @@ export const addItemToBill = async (req, res) => {
   
       res.status(201).json({ message: 'Prescription created successfully', prescription: newPrescription });
     } catch (error) {
-      console.error(error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   };
@@ -161,7 +156,6 @@ export const addPrescriptionEntry = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error adding prescription entry:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -205,7 +199,6 @@ export const addRatingAndReview = async (req, res) => {
             feedbackSchemaEntry: newFeedback
         });
     } catch (error) {
-        console.error('Error adding feedback:', error);
         res.status(500).json({ message: 'Error adding feedback', error });
     }
 };
@@ -228,7 +221,6 @@ export const calculateDepartmentRating = async (req, res) => {
 
         res.status(200).json({ departmentRating });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Error calculating department rating', error });
     }
 };
@@ -247,7 +239,6 @@ export const getAllFeedbacks = async (req, res) => {
             feedbacks
         });
     } catch (error) {
-        console.error('Error in getAllFeedbacks:', error);
         res.status(500).json({ message: 'Error retrieving feedbacks', error });
     }
 };
@@ -270,7 +261,6 @@ export const calculateOverallRating = async (req, res) => {
             totalFeedbacks
         });
     } catch (error) {
-        console.error('Error in getOverallRating:', error);
         res.status(500).json({ message: 'Error calculating overall rating', error });
     }
 };
@@ -323,7 +313,6 @@ export const getRatingDistribution = async (req, res) => {
       ratingDistribution: distribution.length > 0 ? distribution[0] : {} 
     });
   } catch (error) {
-    console.error('Error fetching rating distribution:', error);
     return res.status(500).json({ error: 'Failed to fetch rating distribution' });
   }
 };
@@ -341,7 +330,6 @@ export const getFacilityStatistics = async (req, res) => {
 
         res.json({ totalRooms, totalBeds,rooms });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Error fetching facility statistics', error });
     }
 };
@@ -372,7 +360,6 @@ async function initializeDailyOccupancy() {
       console.log(`Daily occupancy initialized for ${todayMidnight.toISOString().split('T')[0]} with count ${previousOccupancy}`);
     }
   } catch (error) {
-    console.error('Error initializing daily bed occupancy:', error);
   }
 }
 
@@ -480,7 +467,6 @@ export const getBedOccupancyTrends = async (req, res) => {
       trends
     });
   } catch (error) {
-    console.error("Error fetching bed occupancy trends:", error);
     res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
@@ -501,7 +487,6 @@ export const getMedicines = async (req, res) => {
     // Return the formatted data
     res.json(formattedMedicines);
   } catch (error) {
-    console.error('Error fetching medicines:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -633,7 +618,6 @@ export const getMedicineInventoryTrends = async (req, res) => {
     });
  
   } catch (error) {
-    console.error('Error fetching medicine inventory trends:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -763,7 +747,6 @@ export const getMedicinePrescriptionTrends = async (req, res) => {
     return res.status(200).json(response);
     
   } catch (error) {
-    console.error('Error fetching medicine prescription trends:', error);
     return res.status(500).json({ 
       message: "Failed to fetch medicine prescription trends", 
       error: error.message 
@@ -813,7 +796,6 @@ export const getDoctorRatingDistribution = async (req, res) => {
       });
   
     } catch (error) {
-      console.error('Error getting doctor rating distribution:', error);
       return res.status(500).json({
         success: false,
         message: 'Failed to retrieve doctor rating distribution',
@@ -852,8 +834,7 @@ export const getDoctorRatingDistribution = async (req, res) => {
       comments: comments
     });
   } catch (error) {
-    console.error('Error in getFeedbacksByRating:', error);
-    res.status(500).json({ message: 'Error retrieving feedback comments', error: error.message });
+   res.status(500).json({ message: 'Error retrieving feedback comments', error: error.message });
   }
 };
 
@@ -877,7 +858,6 @@ export const getAllConsultations = async (req, res) => {
         consultations
       });
     } catch (error) {
-      console.error('Error in getAllConsultations:', error);
       res.status(500).json({ 
         message: 'Error retrieving consultations', 
         error: error.message 
@@ -898,6 +878,7 @@ export const getDoctorQuadrantData = async(req, res) => {
             consultationCount: { $sum: 1 } 
           } 
         },
+
         // Look up doctor information
         { $lookup: {
             from: "doctors",
@@ -931,6 +912,7 @@ export const getDoctorQuadrantData = async(req, res) => {
           }
         }
       ]);
+      
       
       // Categorize into quadrants - do this in memory since we already have all the data
       const quadrants = {
@@ -1000,7 +982,6 @@ export const getDoctorQuadrantData = async(req, res) => {
       return res.status(200).json(response);
       
     } catch (error) {
-      console.error("Error categorizing doctor data:", error);
       return res.status(500).json({ error: "Failed to retrieve doctor performance data" });
     }
   };
@@ -1137,7 +1118,6 @@ export const getDepartmentQuadrantData = async(req, res) => {
       return res.status(200).json(response);
       
     } catch (error) {
-      console.error("Error categorizing department data:", error);
       return res.status(500).json({ error: "Failed to retrieve department performance data" });
     }
   };
@@ -1156,7 +1136,6 @@ export const getAllDoctorsData = async (req, res) => {
       });
       
     } catch (error) {
-      console.error("Error retrieving doctors data:", error);
       return res.status(500).json({
         success: false,
         error: "Server error while retrieving doctors data"
@@ -1228,7 +1207,6 @@ export const getFinanceTrends = async (req, res) => {
     res.json({ monthly, weekly });
 
   } catch (err) {
-    console.error("Error fetching payment trends:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -1299,7 +1277,6 @@ export const getDoctorWorkingTrends = async (req, res) => {
 
     res.status(200).json({ monthly, weekly });
   } catch (error) {
-    console.error("Error in doctor working trends analytics:", error);
     res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
@@ -1365,7 +1342,6 @@ export const getTopKDiseases = async (req, res) => {
     res.status(200).json({ totalConsultations: totalConsults, topDiagnoses: trends });
 
   } catch (error) {
-    console.error("Error in illness trends analytics:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -1524,7 +1500,6 @@ export const getDiseaseTrends = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error in disease trends analytics:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -1662,7 +1637,7 @@ export const addConsultation = async (req, res) => {
   }
 };
 
-
+*/
 
 
 export const getAllDiagnoses = async (req, res) => {
@@ -1688,7 +1663,7 @@ export const getAllDiagnoses = async (req, res) => {
     });
   }
 };
-*/
+
 
 /*
 export const printAllDoctors = async (req, res) => {
@@ -1844,7 +1819,6 @@ export const getDashboardKPIs = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error fetching dashboard KPIs:', error);
     res.status(500).json({ message: 'Error fetching dashboard KPIs', error: error.message });
   }
 };

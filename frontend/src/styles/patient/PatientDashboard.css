@@ -11,6 +11,15 @@
   /* added a max-width to keep the content centered */
 }
 
+.patient-dashboard input, .patient-dashboard textarea{
+  background-color: white;
+  border: 1px solid grey;
+  border-radius: 5px;
+  padding-left: 5px;
+  margin: 2px;
+  width: 100%;
+}
+
 /* Profile Section */
 .profile-section {
   background-color: white;
@@ -25,10 +34,12 @@
 
 /* Profile Photo */
 .profile-photo-container {
+  position: relative;
   display: flex;
   justify-content: center;
   width: 100%;
   margin-bottom: 24px;
+  overflow: visible;
 }
 
 .profile-photo {
@@ -42,7 +53,7 @@
   position: relative;
   border: 4px solid #f0f9ff;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .profile-photo img {
@@ -53,7 +64,6 @@
 
 /* Edit Button - Increased size and squarish shape */
 .edit-button {
-  position: absolute;
   bottom: 8px;
   right: 8px;
   background-color: #4C7E75;
@@ -66,8 +76,26 @@
   transition: transform 0.2s, background-color 0.2s;
 }
 
+.cancel-button {
+  bottom: 8px;
+  right: 8px;
+  background-color: rgb(218, 0, 0);
+  padding: 12px 16px; /* Increased size */
+  border-radius: 8px; /* Squarish corners */
+  color: white;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s, background-color 0.2s;
+}
+
 .edit-button:hover {
   background-color: #3a665e;
+  transform: scale(1.05); /* Slightly smaller scaling */
+}
+
+.cancel-button:hover {
+  background-color: rgb(192, 0, 0);
   transform: scale(1.05); /* Slightly smaller scaling */
 }
 
@@ -84,7 +112,7 @@
   font-size: 1.8rem;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 0px;
   color: #1e293b;
 }
 
@@ -94,7 +122,7 @@
   justify-content: space-between;
   width: 100%;
   font-size: 1.1rem;
-  padding: 8px 0;
+  padding: 4px 0;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -361,10 +389,10 @@
 .details-heading {
   font-size: 1.5rem;
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   color: #1e293b;
   border-bottom: 2px solid #f1f5f9;
-  padding-bottom: 12px;
+  padding-bottom: 0px;
 }
 
 /* Detail Cards Container */
@@ -391,4 +419,34 @@
 
 .detail-card-content {
   color: #334155;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1rem;
+}
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.circular-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #4C7E75; /* Tailwind's blue-500 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  overflow: visible; /* allow button to show outside */
+}
+
+.circular-btn:hover {
+  background-color: #4C7E75; /* Tailwind's blue-600 */
+  overflow: visible; /* allow button to show outside */
 }

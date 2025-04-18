@@ -11,19 +11,24 @@ import {
   updateDiagnosisById,
   updateRemark,
   updateAllPrescription,
-  updatePrescriptionById
+  updatePrescriptionById, 
+  addReport,
+  fetchAllDiagnoses,
 } from '../controllers/doctor.controller.js';
 import { authenticateUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/appointments', authenticateUser, fetchAppointments);
+// router.get('/appointments', authenticateUser, fetchAppointments);
+router.get('/appointments', fetchAppointments);
+
 router.put('/appointments', authenticateUser, updateAppointments);
 
 //  Expects:
 //  - req.params.patientId: String (Patient ID)
 //  - Authentication token with doctor_id in req.user
-router.get('/consultations/:patientId', authenticateUser, fetchPatientConsultations);
+router.get('/consultations', fetchPatientConsultations);
+router.get('/consultations/fetchAllDiagnoses', fetchAllDiagnoses);
 
 // Expects:
 // - req.params.patientId: String (Patient ID)
@@ -73,7 +78,7 @@ router.put('/updateConsultations/:consultationId/updatediagnosis/:diagnosisId', 
  *   "diagnosis": ["Diagnosis 1", "Diagnosis 2", "..."] // Array of strings, can't be empty
  * }
  */
-router.put('/updateConsultations/:consultationId/updatediagnosis', authenticateUser, updateAllDiagnosis);
+router.put('/updateConsultations/:consultationId/updatediagnosis', updateAllDiagnosis);
 
 
 // Expects:
@@ -81,7 +86,7 @@ router.put('/updateConsultations/:consultationId/updatediagnosis', authenticateU
 // - req.body.remark: String
 // - Authentication token with doctor_id in req.user
 router.post('/updateConsultations/:consultationId/addremarks', authenticateUser, addRemarks);
-router.put('/updateConsultations/:consultationId/remark', authenticateUser, updateRemark);
+router.put('/updateConsultations/:consultationId/remark', updateRemark);
 
 /**
  * Adds a new prescription to a consultation
@@ -106,7 +111,9 @@ router.put('/updateConsultations/:consultationId/remark', authenticateUser, upda
  *   }
  * }
  */
-router.post('/updateConsultations/:consultationId/addprescriptions', authenticateUser, addPrescription);
+router.post('/updateConsultations/:consultationId/addprescriptions', addPrescription);
+router.post('/updateConsultations/:consultationId/addreports', addReport);
+
 
 /**
  * Updates a specific prescription by ID

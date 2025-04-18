@@ -4,8 +4,10 @@ import { MdEmail } from 'react-icons/md';
 import { BsTelephone } from 'react-icons/bs';
 import { IoLocationOutline } from 'react-icons/io5';
 import '../styles/Additional.css';
+import { useState, useEffect } from 'react';
 
 const TrendsPage = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="page-container">
       <nav className="navbar">
@@ -14,15 +16,17 @@ const TrendsPage = () => {
           <img src="/shield-icon.png" alt="HMIS Logo" />
           </Link>
           <span>HMIS</span>
-        </div>
-        <div className="nav-links">
-          <Link to="/features">Features</Link>
-          <Link to="/community">Community</Link>
-          <Link to="/trends" className="active">Trends</Link>
-          <Link to="/about">About Us</Link>
+          </div>
+        <div className={`nav-links ${mobileMenuOpen ? 'show' : ''}`}>
+        <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/features" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+          <Link to="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
+          <Link to="/trends" onClick={() => setMobileMenuOpen(false)}>Trends</Link>
+          <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
         </div>
         <button 
           className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle mobile menu"
         >
           ☰
@@ -41,7 +45,7 @@ const TrendsPage = () => {
             <span className="tag">Featured</span>
             <h2>The Rise of AI in Hospital Management</h2>
             <p>Artificial intelligence is revolutionizing hospital operations, from predictive analytics for patient admissions to automated diagnostic support. Learn how HMIS integrates cutting-edge AI technology to improve clinical outcomes and operational efficiency.</p>
-            <Link to="/trends/ai-healthcare" className="btn">READ MORE</Link>
+            <Link to="/AI" className="btn">READ MORE</Link>
           </div>
         </div>
       </section>
@@ -51,8 +55,8 @@ const TrendsPage = () => {
           <img src="/trends/telemedicine.jpeg" alt="Telemedicine Expansion" />
           <div className="trend-content">
             <span className="tag">Telehealth</span>
-            <h3>Telemedicine: Beyond the Pandemic</h3>
-            <p>How virtual care is becoming a permanent fixture in healthcare delivery systems worldwide.</p>
+            <h3>Telemedicine</h3>
+            <p>How virtual care is becoming a fixture in healthcare delivery systems worldwide.</p>
             <Link to="/trends/telemedicine" className="read-more">Read More →</Link>
           </div>
         </div>
@@ -91,8 +95,8 @@ const TrendsPage = () => {
           <img src="/trends/remote-monitoring.webp" alt="Remote Monitoring" />
           <div className="trend-content">
             <span className="tag">Monitoring</span>
-            <h3>Remote Patient Monitoring Advancements</h3>
-            <p>New technologies enabling continuous care beyond hospital walls and reducing readmissions.</p>
+            <h3>Patient Monitoring Tech</h3>
+            <p>New tech enabling care beyond hospitals and reducing readmissions.</p>
             <Link to="/trends/remote-monitoring" className="read-more">Read More →</Link>
           </div>
         </div>
@@ -101,7 +105,7 @@ const TrendsPage = () => {
           <img src="/trends/blockchain.png" alt="Blockchain" />
           <div className="trend-content">
             <span className="tag">Technology</span>
-            <h3>Blockchain in Healthcare Records</h3>
+            <h3>Blockchain in Healthcare</h3>
             <p>Exploring the potential of blockchain technology to secure and share medical information.</p>
             <Link to="/trends/blockchain" className="read-more">Read More →</Link>
           </div>

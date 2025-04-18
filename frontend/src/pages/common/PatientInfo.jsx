@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const PatientInfo = () => {
-  // getting the role for which the patient info shown
-  const location = useLocation();
-  const role = location.pathname.split('/')[1];
+  // Get current user role from localStorage
+  const role = localStorage.getItem("role");
 
   // for saving the context of the fetched data
   const [inputValue, setInputValue] = useState('');

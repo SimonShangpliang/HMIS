@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const refresh = async () => {
+
             try {
                 const res = await refreshAccessToken();
                 setToken(res.data.accessToken);

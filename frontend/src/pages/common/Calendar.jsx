@@ -7,6 +7,11 @@ import { Search } from 'lucide-react';
 
 async function fetchConsultations(doctorId = null) {
   try {
+    // Skip fetch if doctorId is invalid
+    if (!doctorId || parseInt(doctorId) < 10000) {
+      return [];
+    }
+
     const response = await axios.get(`${import.meta.env.VITE_API_URL}/common/calendar/doctor`, {
       params: {
         doctorId,
@@ -67,10 +72,8 @@ const statusColors = {
 
 const MyCalendar = () => {
   // Replace useAuth with localStorage
-  const userId = '10090'
-  //localStorage.getItem("user_id");
-  const currentUserRole = 'receptionist'
-  //localStorage.getItem("role");
+  const userId = localStorage.getItem("user_id");
+  const currentUserRole = localStorage.getItem("role");
 
   const [events, setEvents] = useState([]);
   const [view, setView] = useState('month');
@@ -81,6 +84,8 @@ const MyCalendar = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [selectedDoctor, setSelectedDoctor] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     patient_id: '',
     doctor_id: '',
@@ -103,9 +108,8 @@ const MyCalendar = () => {
     const loadEvents = async () => {
       setLoading(true);
       const doctorId = currentUserRole === 'doctor' ? userId : selectedDoctor;
-      if (doctorId) {
+      if (doctorId && parseInt(doctorId) >= 10000) {
         const events = await fetchConsultations(doctorId);
-        console.log(events)
         setEvents(events);
       } else {
         setEvents([]);
@@ -117,9 +121,12 @@ const MyCalendar = () => {
 
   const handleSaveEvent = async () => {
     try {
+      setActionLoading(true);
+
       // Add validation
       if (!formData.doctor_id || !formData.patient_id || !formData.reason) {
         setErrorMessage('Doctor ID, Patient ID and Reason are required fields');
+        setActionLoading(false);
         return;
       }
 
@@ -151,6 +158,10 @@ const MyCalendar = () => {
     } catch (error) {
       setErrorMessage(error.response?.data?.message || 'Error creating appointment');
     }
+    finally {
+      setActionLoading(false);
+    }
+
   };
 
   const handleEventSelect = async (event) => {
@@ -181,9 +192,11 @@ const MyCalendar = () => {
 
   const handleUpdateEvent = async () => {
     try {
+      setActionLoading(true);
       // Add validation
       if (!updateFormData.doctor_id || !updateFormData.patient_id || !updateFormData.reason) {
         setErrorMessage('Doctor ID, Patient ID and Reason are required fields');
+        setActionLoading(false);
         return;
       }
 
@@ -219,6 +232,10 @@ const MyCalendar = () => {
     } catch (error) {
       setErrorMessage(error.response?.data?.message || 'Error updating appointment');
     }
+    finally {
+      setActionLoading(false);
+    }
+    
   };
 
 
@@ -396,11 +413,23 @@ const MyCalendar = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={handleSaveEvent}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-                  >
-                    Save
-                  </button>
+  onClick={handleSaveEvent}
+  disabled={actionLoading}
+  className={`w-full py-2 rounded text-white ${
+    actionLoading ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
+  }`}
+>
+  {actionLoading ? (
+    <div className="flex items-center justify-center">
+      <div className="animate-spin h-5 w-5 border-b-2 border-white rounded-full mr-2"></div>
+      Saving...
+    </div>
+  ) : (
+    'Save'
+  )}
+</button>
+
+
                 </div>
               </div>
             </div>
@@ -502,12 +531,25 @@ const MyCalendar = () => {
                   </button>
                   <div className="flex gap-2">
 
-                    <button
-                      onClick={handleUpdateEvent}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-                    >
-                      Update
-                    </button>
+                  <button
+  onClick={handleUpdateEvent}
+  disabled={actionLoading}
+  className={`min-w-[120px] w-full py-2 px-4 rounded text-white ${
+    actionLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+  }`}
+>
+  {actionLoading ? (
+    <div className="flex items-center justify-center">
+      <div className="animate-spin h-5 w-5 border-b-2 border-white rounded-full mr-2"></div>
+      Updating...
+    </div>
+  ) : (
+    'Update'
+  )}
+</button>
+
+
+
                   </div>
                 </div>
               </div>

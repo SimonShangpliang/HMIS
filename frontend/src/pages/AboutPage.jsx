@@ -4,8 +4,11 @@ import { MdEmail } from 'react-icons/md';
 import { BsTelephone } from 'react-icons/bs';
 import { IoLocationOutline } from 'react-icons/io5';
 import '../styles/AboutPage.css';
+import { useState, useEffect } from 'react';
+
 
 const AboutPage = () => {
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="page-container">
       <nav className="navbar">
@@ -14,15 +17,17 @@ const AboutPage = () => {
           <img src="/shield-icon.png" alt="HMIS Logo" />
           </Link>
           <span>HMIS</span>
-        </div>
-        <div className="nav-links">
-          <Link to="/features">Features</Link>
-          <Link to="/community">Community</Link>
-          <Link to="/trends">Trends</Link>
-          <Link to="/about" className="active">About Us</Link>
+          </div>
+        <div className={`nav-links ${mobileMenuOpen ? 'show' : ''}`}>
+        <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+          <Link to="/features" onClick={() => setMobileMenuOpen(false)}>Features</Link>
+          <Link to="/community" onClick={() => setMobileMenuOpen(false)}>Community</Link>
+          <Link to="/trends" onClick={() => setMobileMenuOpen(false)}>Trends</Link>
+          <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
         </div>
         <button 
           className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle mobile menu"
         >
           ☰

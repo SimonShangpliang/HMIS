@@ -1,23 +1,39 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate,Link } from "react-router-dom";
+import axios from 'axios';
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
-  const doctorId = "D001"; // Replace with dynamic doctor ID
+  const doctorId = "10008"; // Replace with dynamic doctor ID
   const navigate = useNavigate();
 
   // Mock data fetching function
   const fetchAppointmentsByDoctorId = async (doctorId) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { id: "001645", patientId: "P001", patientName: "Arpan Jain", timeSlot: "8:00-8:05 PM", isDone: false },
-          { id: "001659", patientId: "P002", patientName: "Ness Wadia", timeSlot: "8:25-8:30 PM", isDone: false },
-          { id: "001663", patientId: "P003", patientName: "Robert Johnson", timeSlot: "9:00-9:05 PM", isDone: false },
-          { id: "001671", patientId: "P004", patientName: "Emily Williams", timeSlot: "9:15-9:20 PM", isDone: false },
-        ]);
-      }, 500);
-    });
+    // return new Promise((resolve) => {
+      // setTimeout(() => {
+      //   resolve([
+      //     { id: "001645", patientId: "P001", patientName: "Arpan Jain", timeSlot: "8:00-8:05 PM", isDone: false },
+      //     { id: "001659", patientId: "P002", patientName: "Ness Wadia", timeSlot: "8:25-8:30 PM", isDone: false },
+      //     { id: "001663", patientId: "P003", patientName: "Robert Johnson", timeSlot: "9:00-9:05 PM", isDone: false },
+      //     { id: "001671", patientId: "P004", patientName: "Emily Williams", timeSlot: "9:15-9:20 PM", isDone: false },
+      //   ]);
+      // }, 500);
+      // fetch from backend
+
+      try {
+        const response = await axios.get(`http://localhost:5000/api/doctors/appointments`, {
+          params: { user: doctorId },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+    
+        return response.data; // Axios automatically parses JSON
+      } catch (error) {
+        console.error("Failed to fetch appointments:", error.message);
+        return [];
+      }
+      
   };
 
   useEffect(() => {

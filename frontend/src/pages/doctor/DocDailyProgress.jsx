@@ -10,54 +10,58 @@ const DocDailyProgress = () => {
 
   // Mock data fetching function
   const fetchDailyProgressByPatientId = async (patientId) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { 
-            id: 1, 
-            date: "2025-04-03", 
-            temperature: "98.6°F", 
-            bloodPressure: "120/80", 
-            pulse: "72 bpm",
-            respiration: "16/min",
-            oxygenSaturation: "98%"
-          },
-          { 
-            id: 2, 
-            date: "2025-04-04", 
-            temperature: "98.4°F", 
-            bloodPressure: "118/78", 
-            pulse: "70 bpm",
-            respiration: "15/min",
-            oxygenSaturation: "99%"
-          },
-          { 
-            id: 3, 
-            date: "2025-04-05", 
-            temperature: "98.7°F", 
-            bloodPressure: "122/82", 
-            pulse: "74 bpm",
-            respiration: "16/min",
-            oxygenSaturation: "97%"
-          }
-        ]);
-      }, 500);
-    });
+    try {
+      const response = await fetch(`http://localhost:5000/api/doctors/progress/${patientId}`);
+      
+      // Ensure the response is OK (status code 200-299)
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+  
+      const data = await response.json();
+  
+      // Return the data in the format you need
+      return data.data.map(item => ({
+        id: item._id,  // Assuming _id can be used as the unique identifier
+        date: item.date.slice(0, 10),  // Extract date in YYYY-MM-DD format
+        temperature: `${item.bodyTemp}°C`,  // Assuming the body temperature is in Celsius
+        bloodPressure: `${item.bloodPressure}/80`,  // Assuming fixed diastolic pressure, adjust as necessary
+        pulse: `${item.pulseRate} bpm`,
+        respiration: `${item.breathingRate} /min`,
+        oxygenSaturation: "Unknown"  // You don't have data for oxygen saturation in the example provided
+      }));
+    } catch (error) {
+      console.error("Error fetching patient progress:", error);
+      return [];  // Return an empty array on error
+    }
   };
-
+  
   // Mock function to get patient details
   const fetchPatientDetails = async (patientId) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          id: patientId,
-          name: "Arpan Jain",
-          age: 32,
-          gender: "Male",
-        });
-      }, 300);
-    });
+    try {
+      const response = await fetch(`http://localhost:5000/api/patients/profile/${patientId}`);
+      
+      // Ensure the response is OK (status code 200-299)
+      if (!response.ok) {
+        throw new Error('Failed to fetch patient details');
+      }
+  
+      const data = await response.json();
+      
+      // Map the response data to your required format
+      return {
+        id: data._id,  // Patient's ID
+        name: data.name,  // Patient's name
+        age: data.patient_info.age,  // Patient's age
+        gender: data.gender,  // Patient's gender
+        // You can add more fields as required (e.g., address, email, etc.)
+      };
+    } catch (error) {
+      console.error("Error fetching patient details:", error);
+      return null;  // Return null or empty object if there's an error
+    }
   };
+  
 
   useEffect(() => {
     const loadData = async () => {

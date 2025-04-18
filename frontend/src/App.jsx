@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
+import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -14,6 +15,7 @@ import TrendsPage from './pages/TrendsPage';
 import AboutPage from './pages/AboutPage';
 import TermsPage from './pages/terms';
 import PrivacyPolicyPage from './pages/privacy';
+import AIHealthcarePage from './pages/AI'
 import './App.css';
 import ProtectedLayout from "./components/ProtectedLayout";
 // Common Pages
@@ -76,6 +78,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AddStaff from "./pages/admin/AddStaff";
 import ManagePayrolls from "./pages/admin/ManagePayrolls";
 import Ambulance from "./pages/admin/Ambulance";
+import Chatbot from "./pages/admin/Chatbot";
 
 // Analytics Pages
 import AnalyticsDashboard from "./pages/admin/analytics/AnalyticsDashboard";
@@ -106,6 +109,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+      <ScrollToTop />
 
 
         <Routes>
@@ -121,6 +125,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage/>} />
           <Route path= "/terms" element={<TermsPage/>} />
+          <Route path= "/AI" element={<AIHealthcarePage/>} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
 
@@ -235,7 +240,7 @@ function App() {
          {/* Admin & Analytics Routes */}
          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/add-staff" element={<AddStaff />} />
+            <Route path="/admin/staff" element={<AddStaff />} />
             <Route path="/admin/manage-payrolls" element={<ManagePayrolls />} />
             <Route path="/admin/ambulance" element={<Ambulance />} />
 
@@ -249,6 +254,7 @@ function App() {
             <Route path="/admin/analytics/text-feedback" element={<TextualFeedbackAnalysis />} />
             <Route path="/admin/analytics/bed-occupancy" element={<BedOccupancyTrends />} />
             <Route path="/admin/analytics/feedbacks" element={<Feedbacks />} />
+            <Route path="/admin/assistant" element={<Chatbot />} />
           </Route>
 
           </Route>

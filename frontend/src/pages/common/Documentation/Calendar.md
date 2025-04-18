@@ -6,36 +6,55 @@ The `MyCalendar` component is a React functional component that provides a compr
 
 ## Features
 
-- Role-based permissions and views
-- Appointment creation, viewing, and updating
-- Visual status indicators via color coding
-- Multiple calendar views (month, week, day)
-- Doctor filtering for admin and receptionist roles
-- Detailed appointment information display
+- Displays appointments in a calendar view.
+- Role-based permissions and views.
+- Appointment creation, viewing, and updating.
+- Visual status indicators via color coding.
+- Multiple calendar views (month, week, day).
+- Doctor filtering for admin and receptionist roles.
+- Detailed appointment information display.
 
-## File: `Calendar.jsx`
+## Key UI Components
 
-### Imports
+- **Calendar View**: Displays appointments in month, week, or day views.
+- **Add Appointment Modal**: Allows receptionists to add new appointments.
+- **Update Appointment Modal**: Allows receptionists to update existing appointments.
+- **Status Legend**: Displays color-coded statuses for appointments.
 
-```jsx
-import React, { useState, useEffect } from "react";
-import { Calendar, momentLocalizer } from "react-big-calendar";
-import moment from "moment";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import axios from "axios";
-import { Search } from "lucide-react";
-```
+## Key Functionalities
 
-### Helper Functions
+### Fetching Consultations
+- **Functionality**: Fetches consultations for a specific doctor.
+- **API Endpoint**: `/api/common/calendar/doctor`.
+- **Response Format**:
+  ```json
+  [
+    {
+      "id": "123",
+      "title": "Consultation with John Doe",
+      "start": "2023-10-01T10:00:00Z",
+      "end": "2023-10-01T11:00:00Z",
+      "status": "scheduled",
+      "reason": "Routine checkup",
+      "patientId": "P001",
+      "appointment_type": "regular"
+    }
+  ]
+  ```
 
-- `fetchConsultations(doctorId)`: Fetches consultation data from the API based on doctor ID.
-- `updateConsultation(consultationId, updateData)`: Updates an existing consultation in the database.
+### Adding Appointments
+- **Functionality**: Allows receptionists to add new appointments using a modal form.
+- **Validation**:
+  - Required fields: `Doctor ID`, `Patient ID`, `Reason`.
+- **API Endpoint**: `/api/consultations/book`.
 
-### Calendar Configuration
+### Updating Appointments
+- **Functionality**: Allows receptionists to update existing appointments, including status and reason.
+- **Validation**:
+  - Required fields: `Doctor ID`, `Patient ID`, `Reason`.
+- **API Endpoint**: `/api/consultations/update/:id`.
 
-- `localizer`: Uses momentLocalizer for date handling.
-- `formats`: Custom date formatting for calendar headers.
-- `statusColors`: Maps appointment statuses to specific colors for visual indication.
+## Props and State
 
 ### State Variables
 
@@ -51,11 +70,7 @@ import { Search } from "lucide-react";
 - `formData`: Form data for creating new appointments.
 - `updateFormData`: Form data for updating existing appointments.
 
-### `useEffect` Hook
-
-Triggered when `userId`, `currentUserRole`, or `selectedDoctor` changes. It fetches appointment data based on the user's role and selected doctor.
-
-### Event Handlers
+## Event Handlers
 
 - `handleSaveEvent()`: Creates a new appointment.
 - `handleEventSelect()`: Handles selection of an existing appointment.
@@ -80,26 +95,43 @@ Triggered when `userId`, `currentUserRole`, or `selectedDoctor` changes. It fetc
 
 ## Status Colors
 
-- **Green** (#10b981): Scheduled appointments
-- **Blue** (#3b82f6): Ongoing appointments
-- **Indigo** (#6366f1): Completed appointments
-- **Red** (#ef4444): Cancelled appointments
+- **Green** (#10b981): Scheduled appointments.
+- **Blue** (#3b82f6): Ongoing appointments.
+- **Indigo** (#6366f1): Completed appointments.
+- **Red** (#ef4444): Cancelled appointments.
 
 ## Role-Based Access
 
-- **Receptionist**: Full access to create and update appointments
-- **Doctor**: Read-only access to view their appointments
-- **Admin**: Read-only access with ability to filter by doctor
+- **Receptionist**: Full access to create and update appointments.
+- **Doctor**: Read-only access to view their appointments.
+- **Admin**: Read-only access with the ability to filter by doctor.
 
-## Usage
+## Error Handling
 
-This component assumes the user's role and ID are available from localStorage. For testing purposes, it currently uses hardcoded values (`userId: '10090'`, `currentUserRole: 'receptionist'`).
+- Displays error messages for invalid form submissions.
+- Handles API errors gracefully.
+
+## Dependencies
+
+- `react-big-calendar`: For calendar UI.
+- `moment`: For date manipulation.
+- `axios`: For API calls.
+
+## Example Usage
+
+```jsx
+import MyCalendar from './Calendar';
+
+function App() {
+  return <MyCalendar />;
+}
+```
 
 ## API Integration
 
-- `GET ${import.meta.env.VITE_API_URL}/common/calendar/doctor`: Retrieves appointments
-- `POST ${import.meta.env.VITE_API_URL}/consultations/book`: Creates new appointments
-- `PUT ${import.meta.env.VITE_API_URL}/consultations/update/:id`: Updates existing appointments
+- `GET /api/common/calendar/doctor`: Retrieves appointments.
+- `POST /api/consultations/book`: Creates new appointments.
+- `PUT /api/consultations/update/:id`: Updates existing appointments.
 
 ## Custom Styling
 
