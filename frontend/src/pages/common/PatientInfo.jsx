@@ -13,8 +13,84 @@ const PatientInfo = () => {
   const [medicines, setMedicines] = useState([]);
   const [lastConsultation, setLastConsultation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null); 
+  const [editedQuantity, setEditedQuantity] = useState(''); 
 
+  const handleEdit = (index, currentQty) => {
+    setEditingIndex(index);
+    setEditedQuantity(currentQty);
+  };
 
+  const handleCancel = () => {
+    setEditingIndex(null);
+    setEditedQuantity('');
+  };
+
+  const handleSave = async (prescriptionId, entryId) => {
+    const med = medicines.find(med => med.prescription_id === prescriptionId && med.entry_id === entryId);
+    if (!med) {
+      alert("Medicine not found.");
+      return;
+    }
+
+    // const remainingQty = med.quantity - med.dispensed_qty;
+    const enteredQty = Number(editedQuantity);
+
+    // valid quantity should be present
+    if (!editedQuantity || enteredQty <= 0) {
+      alert('Please enter a valid quantity.');
+      return;
+    }
+
+    if (enteredQty > med.quantity) {
+      alert(`You cannot dispense more than the total quantity.`);
+      return;
+    }
+
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/pharmacists/prescriptions/${prescriptionId}/entries/${entryId}`, {
+        dispensed_qty: enteredQty
+      });
+
+      // Update local state immediately
+      setMedicines(prevMeds => prevMeds.map(m => {
+        if (m.prescription_id === prescriptionId && m.entry_id === entryId) {
+          const updated_dispensed = enteredQty;
+          const total_quantity = m.quantity;
+
+          const updated_status = updated_dispensed === total_quantity ? 'dispensed' : (updated_dispensed > 0 ? 'partially_dispensed' : 'pending');
+
+          return {
+            ...m,
+            dispensed_qty: updated_dispensed,
+            prescription_status: updated_status
+          };
+        }
+        return m;
+      }));
+
+      setEditingIndex(null);
+      setEditedQuantity('');
+    } catch (error) {
+  console.error("Failed to update medicine:", error);
+
+  if (error.response) {
+    console.error("Server responded with status:", error.response.status);
+    console.error("Server error message:", error.response.data);
+    alert(`Failed to save: ${error.response.data.message || 'Unknown server error'}`);
+  } else if (error.request) {
+    console.error("No response received:", error.request);
+    alert("No response from server. Please check your internet connection.");
+  } else {
+    console.error("Error setting up the request:", error.message);
+    alert(`Request error: ${error.message}`);
+  }
+
+  setEditingIndex(null);
+  setEditedQuantity('');
+}
+
+  }
   const fetchPrescribedTests = async (patientId) => {
     return new Promise(async (resolve) => {
       try {
@@ -40,7 +116,7 @@ const PatientInfo = () => {
             dispense: false
           }
         });
-        console.log(response.data);
+        // console.log(response.data);
         return resolve({
           patient: response.data.patient,
           prescribed_medicines: response.data.prescribed_medicines || [],
@@ -188,6 +264,7 @@ const PatientInfo = () => {
                     <th className='px-4 py-2 border border-gray-700 text-center'>Quantity</th>
                     <th className='px-4 py-2 border border-gray-700 text-center'>Dispensed</th>
                     <th className='px-4 py-2 border border-gray-700 text-center'>Status</th>
+                    <th className='px-4 py-2 border border-gray-700 text-center'>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,12 +274,39 @@ const PatientInfo = () => {
                       <td className='px-4 py-2 border border-gray-700 text-center'>{med.dosage}</td>
                       <td className='px-4 py-2 border border-gray-700 text-center'>{med.frequency}</td>
                       <td className='px-4 py-2 border border-gray-700 text-center'>{med.quantity}</td>
-                      <td className='px-4 py-2 border border-gray-700 text-center'>{med.dispensed_qty}</td>
+                      <td className='px-4 py-2 border border-gray-700 text-center'>
+                        {editingIndex === index ? (
+                          <input
+                            type="number"
+                            value={editedQuantity}
+                            onChange={(e) => setEditedQuantity(e.target.value)}
+                            className="w-20 text-center border rounded border-black"
+                          />
+                        ) : (
+                          med.dispensed_qty
+                        )}
+                      </td>
                       <td className={`px-4 py-2 border border-gray-700 text-center font-semibold ${med.prescription_status === 'dispensed' ? 'text-green-600' :
                         med.prescription_status === 'partially_dispensed' ? 'text-yellow-500' :
                           'text-red-500'
                         }`}>
                         {med.prescription_status}
+                      </td>
+                      <td className='px-4 py-2 border border-gray-700 text-center'>
+                        {editingIndex === index ? (
+                          <>
+                            <button onClick={() => handleSave(med.prescription_id,med.entry_id)} className="text-green-600 mr-2 cursor-pointer">Save</button>
+                            <button onClick={handleCancel} className="text-red-600  cursor-pointer">Cancel</button>
+                          </>
+                        ) : (
+                          <button 
+                            onClick={() => handleEdit(index, med.dispensed_qty)} 
+                            className={`text-blue-600 cursor-pointer ${med.dispensed_qty === med.quantity ? 'cursor-not-allowed text-gray-500' : ''}`} 
+                            disabled={med.dispensed_qty === med.quantity}
+                          >
+                            Edit
+                          </button>
+                          )}
                       </td>
                     </tr>
                   ))}
