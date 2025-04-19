@@ -23,6 +23,15 @@ const BedOccupancyTrends = () => {
   const [errorDetails, setErrorDetails] = useState('');
   const [filterVisible, setFilterVisible] = useState(true);
 
+
+  const handleStartDateChange = (e)=>{
+    const newStartDate = e.target.value;
+    setStartDate(newStartDate);
+    if (endDate && endDate < newStartDate) {
+      setEndDate("");
+    }
+  }
+
   // Validate date range
   const validateDates = () => {
     if (!startDate || !endDate) {
@@ -369,7 +378,8 @@ const BedOccupancyTrends = () => {
                       <input
                         type="date"
                         value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
+                        max={new Date().toISOString().split("T")[0]}
+                        onChange={handleStartDateChange}
                         className="w-full rounded-md border-gray-200 text-sm shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
                       />
                     </div>
@@ -378,6 +388,8 @@ const BedOccupancyTrends = () => {
                       <label className="text-xs font-medium text-gray-500 mb-1 block">End Date</label>
                       <input
                         type="date"
+                        max={new Date().toISOString().split("T")[0]}
+                        min={startDate}
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         className="w-full rounded-md border-gray-200 text-sm shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"

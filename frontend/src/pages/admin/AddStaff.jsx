@@ -328,6 +328,7 @@ const EmployeeForm = () => {
               <label htmlFor="dob" className={labelStyles}>DOB:</label>
               <input
                 type="date"
+                max = {new Date().toISOString().split("T")[0]}
                 id="dob"
                 name="date_of_birth"
                 value={formData.date_of_birth}
@@ -462,6 +463,7 @@ const EmployeeForm = () => {
               <label htmlFor="date_of_joining" className={labelStyles}>Date of Joining:</label>
               <input
                 type="date"
+                defaultValue={new Date().toISOString().split("T")[0]}
                 id="date_of_joining"
                 name="date_of_joining"
                 value={formData.date_of_joining}

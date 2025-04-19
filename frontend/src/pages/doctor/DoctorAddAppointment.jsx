@@ -407,6 +407,7 @@ const DoctorAddAppointment = () => {
                 <input
                   type="date"
                   name="date"
+                  min = {new Date().toISOString().split('T')[0]} // Disable past dates
                   value={formData.date}
                   onChange={handleChange}
                   className="w-full px-3 py-2 focus:outline-none border-none"

@@ -50,6 +50,25 @@ const Inventory = () => {
     else if (role === 'pathologist') setInventoryType('equipment');
   }, [role]);
 
+  const handleMfgDateChange_med = (e) => {
+    const newMfgDate = e.target.value;
+    setUpdateForm(prev => {
+      // If expiry_date is before newMfgDate, clear expiry_date
+      if (prev.expiry_date && prev.expiry_date < newMfgDate) {
+        return {
+          ...prev,
+          manufacturing_date: newMfgDate,
+          expiry_date: ''
+        };
+      }
+      // Otherwise, just update manufacturing_date
+      return {
+        ...prev,
+        manufacturing_date: newMfgDate
+      };
+    });
+  };
+
   // Fetch inventory data
   const fetchInventory = async () => {
     try {
@@ -479,7 +498,8 @@ const Inventory = () => {
                 <input
                   type="date"
                   value={updateForm.manufacturing_date}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, manufacturing_date: e.target.value }))}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={handleMfgDateChange_med}
                   className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -488,6 +508,7 @@ const Inventory = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
                 <input
                   type="date"
+                  min={updateForm.manufacturing_date}
                   value={updateForm.expiry_date}
                   onChange={(e) => setUpdateForm(prev => ({ ...prev, expiry_date: e.target.value }))}
                   className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
@@ -600,6 +621,7 @@ const Inventory = () => {
                   <input
                     type="date"
                     value={equipmentForm.installation_date}
+                    max = {new Date().toISOString().split('T')[0]}
                     onChange={(e) => setEquipmentForm(prev => ({ ...prev, installation_date: e.target.value }))}
                     className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
                     required
@@ -612,6 +634,7 @@ const Inventory = () => {
                   <input
                     type="date"
                     value={equipmentForm.last_service_date}
+                    max={new Date().toISOString().split('T')[0]}
                     onChange={(e) => setEquipmentForm(prev => ({ ...prev, last_service_date: e.target.value }))}
                     className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
                   />
@@ -622,6 +645,9 @@ const Inventory = () => {
                 <input
                   type="date"
                   value={equipmentForm.next_service_date}
+                  min={
+                    new Date().toISOString().split('T')[0]// next service date never in past
+                  }
                   onChange={(e) => setEquipmentForm(prev => ({ ...prev, next_service_date: e.target.value }))}
                   className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
                 />

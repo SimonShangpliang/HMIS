@@ -405,6 +405,7 @@ const PatientDashboard = () => {
                     <label>Date of Birth:</label>
                     <input
                       type="date"
+                      max = {new Date().toISOString().split("T")[0]}
                       value={editedDetails.date_of_birth || ''}
                       onChange={(e) =>
                         setEditedDetails({ ...editedDetails, date_of_birth: e.target.value })
@@ -529,6 +530,7 @@ const PatientDashboard = () => {
               <label htmlFor="policy-end-date">Policy End Date</label>
               <input
                 type="date"
+                min = {new Date().toISOString().split("T")[0]}
                 id="policy-end-date"
                 value={policyEndDate}
                 onChange={(e) => setPolicyEndDate(e.target.value)}
