@@ -5,7 +5,29 @@ import axios from "axios";
 import "../../styles/patient/DoctorAppointment.css";
 import { useAuth } from "../../context/AuthContext";
 
+function calculateExperience(dateOfJoining) {
+  // Convert the dateOfJoining string to a Date object
+  const joiningDate = new Date(dateOfJoining);
 
+  // Check if the dateOfJoining string is a valid Date
+  if (isNaN(joiningDate)) {
+    return '00';  // Return '00' if the date string is not valid
+  }
+
+  const currentDate = new Date();
+
+  // Calculate years of experience
+  const yearsDifference = currentDate.getFullYear() - joiningDate.getFullYear();
+
+  // Check if the doctor has had their birthday this year
+  const hasHadBirthdayThisYear = (currentDate.getMonth() > joiningDate.getMonth()) ||
+    (currentDate.getMonth() === joiningDate.getMonth() && currentDate.getDate() >= joiningDate.getDate());
+
+  // Adjust years of experience if the birthday hasn't happened yet this year
+  const experienceInYears = hasHadBirthdayThisYear ? yearsDifference : yearsDifference - 1;
+
+  return experienceInYears.toString();  // Return the years of experience as a string
+}
 
 const DoctorAppointment = () => {
   const { doctorId } = useParams();
@@ -197,7 +219,17 @@ const DoctorAppointment = () => {
             <h3 className="section-title">About</h3>
             <p className="detail-item">
               <Award size={16} className="detail-icon" />
-              <span>{doctor.qualification} • {doctor.experience} years experience</span>
+              <span>
+                {
+                  doctor.qualification ? (
+                    <>
+                      {doctor.qualification} • {doctor.experience || calculateExperience(doctor.employee_id.date_of_joining)}
+                    </>
+                  ) : (
+                    doctor.experience || calculateExperience(doctor.employee_id.date_of_joining) // Only show the experience if no qualification
+                  )
+                } years  experience
+              </span>
             </p>
             <p className="detail-item">
               <MapPin size={16} className="detail-icon" />

@@ -6,6 +6,31 @@ import { Search } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 
+function calculateExperience(dateOfJoining) {
+  // Convert the dateOfJoining string to a Date object
+  const joiningDate = new Date(dateOfJoining);
+
+  // Check if the dateOfJoining string is a valid Date
+  if (isNaN(joiningDate)) {
+    return '00';  // Return '00' if the date string is not valid
+  }
+
+  const currentDate = new Date();
+
+  // Calculate years of experience
+  const yearsDifference = currentDate.getFullYear() - joiningDate.getFullYear();
+
+  // Check if the doctor has had their birthday this year
+  const hasHadBirthdayThisYear = (currentDate.getMonth() > joiningDate.getMonth()) ||
+    (currentDate.getMonth() === joiningDate.getMonth() && currentDate.getDate() >= joiningDate.getDate());
+
+  // Adjust years of experience if the birthday hasn't happened yet this year
+  const experienceInYears = hasHadBirthdayThisYear ? yearsDifference : yearsDifference - 1;
+
+  return experienceInYears.toString();  // Return the years of experience as a string
+}
+
+
 const BookConsultation = () => {
   const navigate = useNavigate();
   const [location, setLocation] = useState("");
@@ -157,10 +182,26 @@ const BookConsultation = () => {
                     {doctor.employee_id?.name || 'Unknown Doctor'}
                   </span>
                   <span className="doctor-specialty">
-                    {doctor.specialization} | {doctor.department_id?.dept_name || 'Unknown Department'}
+                  {
+                    doctor.specialization || doctor.department_id?.dept_name || 'Unknown Department' ? (
+                      <>
+                        {doctor.specialization && doctor.specialization + ' '} 
+                        {doctor.specialization && doctor.department_id?.dept_name && '| '}
+                        {doctor.department_id?.dept_name || 'Unknown Department'}
+                      </>
+                    ) : null
+                  }
                   </span>
                   <span className="doctor-qualification">
-                    {doctor.qualification} • {doctor.experience} years experience
+                  {
+                    doctor.qualification ? (
+                      <>
+                        {doctor.qualification} • {doctor.experience || calculateExperience(doctor.employee_id.date_of_joining)}
+                      </>
+                    ) : (
+                      doctor.experience || calculateExperience(doctor.employee_id.date_of_joining) // Only show the experience if no qualification
+                    )
+                  } years experience
                   </span>
                   <div className="doctor-rating">
                     Rating: {doctor.rating.toFixed(1)}/5 ({doctor.num_ratings} ratings)
