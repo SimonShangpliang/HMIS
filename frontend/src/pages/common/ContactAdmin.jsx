@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Button, TextField } from '@mui/material';
-import TextArea from '@mui/material/TextareaAutosize';
+import { Button, TextField, Paper, Typography, Box, CircularProgress } from '@mui/material';
+import { Send as SendIcon } from '@mui/icons-material';
 import axios from 'axios';
 
 const ContactAdmin = () => {
@@ -18,7 +18,7 @@ const ContactAdmin = () => {
     setIsError(false);
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/employees/send`, {
+      const response = await axios.post('http://localhost:5000/api/employees/send', {
         subject,
         message,
         email
@@ -39,52 +39,89 @@ const ContactAdmin = () => {
   };
 
   return (
-    <div className="p-20 relative">
-      {/* Top Response Message */}
-      {responseMessage && (
-        <div
-          className={`absolute top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded shadow-md text-white font-medium transition-all duration-300 ${
-            isError ? 'bg-red-500' : ''
-          }`}
-          style={{ backgroundColor: isError ? '#EF4444' : '#4C7E75' }}
-        >
-          {responseMessage}
-        </div>
-      )}
+    <Box className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <Paper elevation={3} className="p-8 rounded-lg">
+          {/* Header Section */}
+          <Box className="text-center mb-8">
+            <Typography variant="h4" component="h1" className="text-gray-800 font-bold mb-2">
+              Contact Administration
+            </Typography>
+            <Typography variant="body1" className="text-gray-600">
+              Have a question or need assistance? Send us a message and we'll get back to you as soon as possible.
+            </Typography>
+          </Box>
 
-      <h1 className="text-2xl font-bold mb-6">Contact Admin</h1>
-      <form onSubmit={handleSubmit} className="flex flex-col justify-center items-center gap-4">
-        <TextField
-          label="Subject"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          className="mb-4"
-          required
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-        />
-        <TextArea
-          placeholder="Message"
-          className="m-1 w-full p-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          minRows={4}
-          required
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        <div className="w-full flex justify-end">
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={actionLoading}
-            style={{ backgroundColor: '#4C7E75', color: 'white' }}
-            className="mx-4"
-          >
-            {actionLoading ? 'Sending...' : 'Send'}
-          </Button>
-        </div>
-      </form>
-    </div>
+          {/* Response Message */}
+          {responseMessage && (
+            <Box
+              className={`mb-6 p-4 rounded-lg text-white text-center transition-all duration-300 ${
+                isError ? 'bg-red-500' : 'bg-green-500'
+              }`}
+            >
+              {responseMessage}
+            </Box>
+          )}
+
+          {/* Contact Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <TextField
+              label="Subject"
+              variant="outlined"
+              fullWidth
+              required
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="mb-4"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#4C7E75',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#4C7E75',
+                  },
+                },
+              }}
+            />
+
+            <TextField
+              label="Message"
+              multiline
+              rows={6}
+              variant="outlined"
+              fullWidth
+              required
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="mb-6"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: '#4C7E75',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#4C7E75',
+                  },
+                },
+              }}
+            />
+
+            <Box className="flex justify-end">
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={actionLoading}
+                className="bg-[#4C7E75] hover:bg-[#3d655d] text-white px-8 py-3 rounded-lg transition-colors duration-200"
+                startIcon={actionLoading ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
+              >
+                {actionLoading ? 'Sending...' : 'Send Message'}
+              </Button>
+            </Box>
+          </form>
+        </Paper>
+      </div>
+    </Box>
   );
 };
 

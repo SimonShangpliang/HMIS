@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, ChevronLeft, ChevronRight, X, Plus } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, X, Plus, Package, Wrench } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Inventory = () => {
   const role = localStorage.getItem("role");
@@ -257,557 +258,477 @@ const Inventory = () => {
     }
   };
 
-  const paginationControls = (
-    <div className="flex justify-center items-center gap-4 mt-6">
-      <button
-        onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-        disabled={!pagination.hasPrevPage}
-        className="p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <span>
-        Page {pagination.page} of {pagination.totalPages}
-      </span>
-      <button
-        onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-        disabled={!pagination.hasNextPage}
-        className="p-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
-    </div>
-  );
-
-  const medicineColumns = (
-    <tr className="bg-gray-100">
-      <th className="p-3 text-left">ID</th>
-      <th className="p-3 text-left">Medicine Name</th>
-      <th className="p-3 text-left">Manufacturer</th>
-      {viewMode === 'inventory' ? (
-        <>
-          <th className="p-3 text-left">Available Quantity</th>
-          <th className="p-3 text-left">Status</th>
-        </>
-      ) : (<th className="p-3 text-left">Quantity Requested</th>)}
-      {role === 'admin' && <th className="p-3 text-left">Actions</th>}
-    </tr>
-  );
-
-  const medicineRow = (item) => (
-    <tr key={item.id} className="bg-gray-800 text-white rounded-md">
-      <td className="p-3 rounded-l-md">{item.id}</td>
-      <td className="p-3">{item.name}</td>
-      <td className="p-3">{item.manufacturer}</td>
-      <td className="p-3">{item.quantity}</td>
-      {viewMode === 'inventory' && (
-        <>
-          <td className={`p-3 ${!item.available ? 'text-red-300' : 'text-green-300'
-            } ${role !== 'admin' ? 'rounded-r-md' : ''}`}>
-            {item.available ? 'Available' : `Expected: ${item.next_availability}`}
-          </td>
-        </>
-      )}
-      {role === 'admin' && (
-        <td className="p-3 rounded-r-md">
-          <button
-            onClick={() => handleModalOpen('update', item)}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
-          >
-            {viewMode === 'pending' && item.order_status === 'requested' ? 'Review Order' : 'Update'}
-          </button>
-        </td>
-      )}
-    </tr>
-  );
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return dateString.split('T')[0];
   };
 
-  const equipmentRow = (item) => (
-    <tr key={item.id} className="bg-gray-800 text-white rounded-md">
-      <td className="p-3 rounded-l-md">{item.id}</td>
-      <td className="p-3">{item.name}</td>
-      <td className="p-3">{item.quantity}</td>
-      {viewMode === 'inventory' && (
-        <>
-          <td className="p-3">{formatDate(item.last_service_date)}</td>
-          <td className="p-3">{formatDate(item.next_service_date)}</td>
-          <td className={`p-3 ${item.service_status === 'Overdue' ? 'text-red-300' :
-              item.service_status === 'Due Soon' ? 'text-yellow-300' :
-                'text-green-300'
-            } ${role !== 'admin' ? 'rounded-r-md' : ''}`}>
-            {item.service_status}
-          </td>
-        </>
-      )}
-      {role === 'admin' && (
-        <td className="p-3 rounded-r-md">
-          <button
-            onClick={() => handleModalOpen('update', item)}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
-          >
-            {viewMode === 'pending' && item.order_status === 'requested' ? 'Review Order' : 'Update'}
-          </button>
-        </td>
-      )}
-    </tr>
-  );
-
-  const renderModal = () => (
-    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-[800px] relative max-h-[90vh] overflow-y-auto">
-        <button
-          onClick={() => setShowUpdateModal(false)}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        >
-          <X size={20} />
-        </button>
-        <h2 className="text-2xl font-semibold mb-6">
-          {modalMode === 'update'
-            ? 'Update Medicine'
-            : role === 'pharmacist'
-              ? 'Order Medicine'
-              : 'Add New Medicine'}
-        </h2>
-        {(viewMode === 'pending' && modalMode === 'update') ? (
-          <div className="space-y-6">
-            <h3 className="text-lg font-medium">Review Order Request</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <p><span className="font-medium">Name:</span> {selectedMedicine?.name}</p>
-              <p><span className="font-medium">Quantity:</span> {selectedMedicine?.quantity}</p>
-              {/* Add other relevant details */}
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              {inventoryType === 'medicine' ? (
+                <Package className="h-8 w-8 text-blue-600" />
+              ) : (
+                <Wrench className="h-8 w-8 text-blue-600" />
+              )}
+              <h1 className="text-2xl font-bold text-gray-800">
+                {inventoryType === 'medicine' ? 'Medicine Inventory' : 'Equipment Inventory'}
+              </h1>
             </div>
-            <div className="flex gap-4 justify-end mt-6">
-              <button
-                onClick={() => handleOrderStatusUpdate('cancelled')}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-              >
-                Reject Order
-              </button>
-              <button
-                onClick={() => handleOrderStatusUpdate('ordered')}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-              >
-                Accept Order
-              </button>
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-4">
+              {showToggle && (
+                <button
+                  onClick={handleToggleInventory}
+                  className="bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center space-x-2"
+                >
+                  <span>Switch to {inventoryType === 'medicine' ? 'Equipment' : 'Medicine'}</span>
+                  {inventoryType === 'medicine' ? <Wrench className="h-4 w-4" /> : <Package className="h-4 w-4" />}
+                </button>
+              )}
+
+              {(role === 'pharmacist' && inventoryType === 'medicine') ||
+                (role === 'pathologist' && inventoryType === 'equipment') ||
+                role === 'admin' ? (
+                <button
+                  onClick={() => handleModalOpen('add')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>
+                    {role === 'admin'
+                      ? `Add ${inventoryType === 'medicine' ? 'Medicine' : 'Equipment'}`
+                      : `Order ${inventoryType === 'medicine' ? 'Medicines' : 'Equipment'}`}
+                  </span>
+                </button>
+              ) : null}
             </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* New fields for Add mode */}
-            {modalMode === 'add' && (
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Medicine Name</label>
-                  <input
-                    type="text"
-                    value={updateForm.med_name}
-                    onChange={(e) => setUpdateForm(prev => ({ ...prev, med_name: e.target.value }))}
-                    className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+
+          {/* Search Bar */}
+          <div className="mt-6 relative">
+            <input
+              type="text"
+              placeholder={`Search ${inventoryType} by name or ID...`}
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-full p-3 pl-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+            />
+            <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+          </div>
+        </div>
+
+        {/* Admin Tabs */}
+        {role === 'admin' && (
+          <div className="bg-white rounded-lg shadow-sm mb-6">
+            <nav className="flex space-x-8 px-6">
+              <button
+                onClick={() => setViewMode('inventory')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition duration-200 ${
+                  viewMode === 'inventory'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Inventory
+              </button>
+              <button
+                onClick={() => setViewMode('pending')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition duration-200 ${
+                  viewMode === 'pending'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Pending Requests
+              </button>
+            </nav>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-600 text-center">{error}</p>
+          </div>
+        )}
+
+        {/* Inventory Table */}
+        {!loading && !error && (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            {inventory.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  {inventoryType === 'medicine' ? (
+                    <Wrench className="h-12 w-12 mx-auto" />
+                  ) : (
+                    <Wrench className="h-12 w-12 mx-auto" />
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
-                  <input
-                    type="text"
-                    value={updateForm.manufacturer}
-                    onChange={(e) => setUpdateForm(prev => ({ ...prev, manufacturer: e.target.value }))}
-                    className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Effectiveness</label>
-                  <select
-                    value={updateForm.effectiveness}
-                    onChange={(e) => setUpdateForm(prev => ({ ...prev, effectiveness: e.target.value }))}
-                    className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Dosage Form</label>
-                  <select
-                    value={updateForm.dosage_form}
-                    onChange={(e) => setUpdateForm(prev => ({ ...prev, dosage_form: e.target.value }))}
-                    className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="tablet">Tablet</option>
-                    <option value="capsule">Capsule</option>
-                    <option value="syrup">Syrup</option>
-                    <option value="injection">Injection</option>
-                    <option value="cream">Cream</option>
-                    <option value="ointment">Ointment</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+                <p className="text-gray-500 text-lg">
+                  {viewMode === 'pending'
+                    ? 'No pending requests found'
+                    : `No ${inventoryType} items found`}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      {inventoryType === 'medicine' ? (
+                        <>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          {role === 'admin' && (
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Service</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Service</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          {role === 'admin' && (
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          )}
+                        </>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {inventory.map((item) => (
+                      <motion.tr
+                        key={item.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-gray-50 transition duration-150"
+                      >
+                        {inventoryType === 'medicine' ? (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.id}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.manufacturer}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  item.available
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}
+                              >
+                                {item.available ? 'Available' : `Expected: ${item.next_availability}`}
+                              </span>
+                            </td>
+                            {role === 'admin' && (
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <button
+                                  onClick={() => handleModalOpen('update', item)}
+                                  className="text-blue-600 hover:text-blue-900 font-medium"
+                                >
+                                  {viewMode === 'pending' && item.order_status === 'requested' ? 'Review' : 'Update'}
+                                </button>
+                              </td>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.id}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatDate(item.last_service_date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatDate(item.next_service_date)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span
+                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  item.service_status === 'Overdue'
+                                    ? 'bg-red-100 text-red-800'
+                                    : item.service_status === 'Due Soon'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800'
+                                }`}
+                              >
+                                {item.service_status}
+                              </span>
+                            </td>
+                            {role === 'admin' && (
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <button
+                                  onClick={() => handleModalOpen('update', item)}
+                                  className="text-blue-600 hover:text-blue-900 font-medium"
+                                >
+                                  {viewMode === 'pending' && item.order_status === 'requested' ? 'Review' : 'Update'}
+                                </button>
+                              </td>
+                            )}
+                          </>
+                        )}
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
 
-            {/* Inventory fields in grid */}
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
-                <input
-                  type="text"
-                  value={updateForm.batch_no}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, batch_no: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+            {/* Pagination */}
+            {inventory.length > 0 && (
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                    disabled={!pagination.hasPrevPage}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                    disabled={!pagination.hasNextPage}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Page <span className="font-medium">{pagination.page}</span> of{' '}
+                      <span className="font-medium">{pagination.totalPages}</span>
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                      <button
+                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                        disabled={!pagination.hasPrevPage}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                        disabled={!pagination.hasNextPage}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </nav>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                <input
-                  type="number"
-                  value={updateForm.quantity}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, quantity: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturing Date</label>
-                <input
-                  type="date"
-                  value={updateForm.manufacturing_date}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, manufacturing_date: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                <input
-                  type="date"
-                  value={updateForm.expiry_date}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, expiry_date: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
-                <input
-                  type="number"
-                  value={updateForm.unit_price}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, unit_price: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  step="0.01"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-                <input
-                  type="text"
-                  value={updateForm.supplier}
-                  onChange={(e) => setUpdateForm(prev => ({ ...prev, supplier: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleSubmit}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-medium mt-6"
-            >
-              {modalMode === 'update' ? 'Update Medicine' : 'Add Medicine'}
-            </button>
+            )}
           </div>
         )}
       </div>
-    </div>
-  );
 
-  const renderEquipmentModal = () => (
-    <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-[800px] relative max-h-[90vh] overflow-y-auto">
-        <button
-          onClick={() => setShowUpdateModal(false)}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-        >
-          <X size={20} />
-        </button>
-        <h2 className="text-2xl font-semibold mb-6">
-          {modalMode === 'update'
-            ? 'Update Equipment'
-            : role === 'pathologist'
-              ? 'Order Equipment'
-              : 'Add New Equipment'}
-        </h2>
-        {(viewMode === 'pending' && modalMode === 'update') ? (
-          <div className="space-y-6">
-            <h3 className="text-lg font-medium">Review Equipment Request</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <p><span className="font-medium">Name:</span> {selectedEquipment?.name}</p>
-              <p><span className="font-medium">Quantity:</span> {selectedEquipment?.quantity}</p>
-              {/* Add other relevant details */}
-            </div>
-            <div className="flex gap-4 justify-end mt-6">
-              <button
-                onClick={() => handleOrderStatusUpdate('cancelled')}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-              >
-                Reject Order
-              </button>
-              <button
-                onClick={() => handleOrderStatusUpdate('ordered')}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-              >
-                Accept Order
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Equipment Name</label>
-                <input
-                  type="text"
-                  value={equipmentForm.equipment_name}
-                  onChange={(e) => setEquipmentForm(prev => ({ ...prev, equipment_name: e.target.value }))}
-                  className={`p-2 w-full border rounded focus:ring-2 focus:ring-blue-500 ${modalMode === 'update' ? 'bg-gray-100' : ''
-                    }`}
-                  required
-                  readOnly={modalMode === 'update'}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                <input
-                  type="number"
-                  value={equipmentForm.quantity}
-                  onChange={(e) => setEquipmentForm(prev => ({ ...prev, quantity: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  required
-                />
-              </div>
-              {modalMode === 'add' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Installation Date</label>
-                  <input
-                    type="date"
-                    value={equipmentForm.installation_date}
-                    onChange={(e) => setEquipmentForm(prev => ({ ...prev, installation_date: e.target.value }))}
-                    className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              )}
-              {modalMode === 'update' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Service Date</label>
-                  <input
-                    type="date"
-                    value={equipmentForm.last_service_date}
-                    onChange={(e) => setEquipmentForm(prev => ({ ...prev, last_service_date: e.target.value }))}
-                    className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Next Service Date</label>
-                <input
-                  type="date"
-                  value={equipmentForm.next_service_date}
-                  onChange={(e) => setEquipmentForm(prev => ({ ...prev, next_service_date: e.target.value }))}
-                  className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleEquipmentSubmit}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-medium mt-6"
-            >
-              {modalMode === 'update' ? 'Update Equipment' : 'Add Equipment'}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderTabs = () => {
-    if (role !== 'admin') return null;
-
-    return (
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setViewMode('inventory')}
-            className={`${viewMode === 'inventory'
-                ? 'border-blue-500 text-blue-600 border-b-2'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              } whitespace-nowrap py-4 px-1 font-medium`}
+      {/* Modals */}
+      <AnimatePresence>
+        {showUpdateModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50"
           >
-            Inventory
-          </button>
-          <button
-            onClick={() => setViewMode('pending')}
-            className={`${viewMode === 'pending'
-                ? 'border-blue-500 text-blue-600 border-b-2'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              } whitespace-nowrap py-4 px-1 font-medium`}
-          >
-            Pending Requests
-          </button>
-        </nav>
-      </div>
-    );
-  };
-
-  return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">
-          {inventoryType === 'medicine' ? 'Medicine Inventory' : 'Equipment Inventory'}
-        </h1>
-
-        {/* Right-side buttons */}
-        <div className="flex items-center space-x-4">
-          {/* Toggle Button - Only shown for doctor, admin, nurse */}
-          {showToggle && (
-            <button
-              onClick={handleToggleInventory}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl w-[800px] max-h-[90vh] overflow-y-auto relative"
             >
-              Switch to {inventoryType === 'medicine' ? 'Equipment' : 'Medicine'} Inventory
-            </button>
-          )}
-
-          {/* Pharmacist: Order Medicines */}
-          {role === 'pharmacist' && inventoryType === 'medicine' && (
-            <button
-              onClick={() => handleModalOpen('add')}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-            >
-              Order Medicines
-            </button>
-          )}
-
-          {/* Pathologist: Order Equipment */}
-          {role === 'pathologist' && inventoryType === 'equipment' && (
-            <button
-              onClick={() => handleModalOpen('add')}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-            >
-              Order Equipment
-            </button>
-          )}
-
-          {/* Admin: Add Medicine/Equipment */}
-          {role === 'admin' && (
-            <button
-              onClick={() => handleModalOpen('add')}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Add {inventoryType === 'medicine' ? 'Medicine' : 'Equipment'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {role === 'admin' && renderTabs()}
-
-      {/* Search Bar */}
-      <div className="mb-6 relative mx-auto">
-        <input
-          type="text"
-          placeholder={`Search by ${inventoryType === 'medicine' ? 'medicine' : 'equipment'} name or ID...`}
-          value={searchTerm}
-          onChange={handleSearchChange}
-          className="w-full p-3 border border-gray-300 rounded-md pr-10"
-        />
-        <Search className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
-      </div>
-
-      {/* Loading and Error States */}
-      {loading && (
-        <div className="text-center py-4">
-          <p>Loading inventory...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="text-center py-4 text-red-500">
-          <p>{error}</p>
-        </div>
-      )}
-
-      {/* Tables with updated data mapping */}
-      {!loading && !error && (
-        <>
-          {inventory.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p className="text-lg">
-                {viewMode === 'pending'
-                  ? 'No pending requests found'
-                  : `No ${inventoryType} items found`}
-              </p>
-            </div>
-          ) : (
-            <>
-              {inventoryType === 'medicine' ? (
-                <div className="overflow-x-auto">
-                  <table className="w-3/4 mx-auto border-separate border-spacing-y-2">
-                    <thead>
-                      {medicineColumns}
-                    </thead>
-                    <tbody>
-                      {inventory.map(medicineRow)}
-                    </tbody>
-                  </table>
+              <button
+                onClick={() => setShowUpdateModal(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                <X size={20} />
+              </button>
+              <h2 className="text-2xl font-semibold mb-6">
+                {modalMode === 'update'
+                  ? 'Update Medicine'
+                  : role === 'pharmacist'
+                    ? 'Order Medicine'
+                    : 'Add New Medicine'}
+              </h2>
+              {(viewMode === 'pending' && modalMode === 'update') ? (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-medium">Review Order Request</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <p><span className="font-medium">Name:</span> {selectedMedicine?.name}</p>
+                    <p><span className="font-medium">Quantity:</span> {selectedMedicine?.quantity}</p>
+                    {/* Add other relevant details */}
+                  </div>
+                  <div className="flex gap-4 justify-end mt-6">
+                    <button
+                      onClick={() => handleOrderStatusUpdate('cancelled')}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+                    >
+                      Reject Order
+                    </button>
+                    <button
+                      onClick={() => handleOrderStatusUpdate('ordered')}
+                      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                    >
+                      Accept Order
+                    </button>
+                  </div>
                 </div>
               ) : (
-                // Equipment table with similar updates
-                <div className="overflow-x-auto">
-                  <table className="w-3/4 mx-auto border-separate border-spacing-y-2">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="p-3 text-left">ID</th>
-                        <th className="p-3 text-left">Equipment Name</th>
-                        {viewMode === "inventory" ? (
-                          <>
-                            <th className="p-3 text-left">Available Quantity</th>
-                            <th className="p-3 text-left">Last Service Date</th>
-                            <th className="p-3 text-left">Next Service Date</th>
-                            <th className="p-3 text-left">Service Status</th>
-                          </>
-                        ) : (
-                          <th className="p-3 text-left">Quantity Requested</th>
-                        )}
-                        {role === 'admin' && <th className="p-3 text-left">Actions</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inventory.map(equipmentRow)}
-                    </tbody>
-                  </table>
+                <div className="space-y-6">
+                  {/* New fields for Add mode */}
+                  {modalMode === 'add' && (
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Medicine Name</label>
+                        <input
+                          type="text"
+                          value={updateForm.med_name}
+                          onChange={(e) => setUpdateForm(prev => ({ ...prev, med_name: e.target.value }))}
+                          className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                        <input
+                          type="text"
+                          value={updateForm.manufacturer}
+                          onChange={(e) => setUpdateForm(prev => ({ ...prev, manufacturer: e.target.value }))}
+                          className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Effectiveness</label>
+                        <select
+                          value={updateForm.effectiveness}
+                          onChange={(e) => setUpdateForm(prev => ({ ...prev, effectiveness: e.target.value }))}
+                          className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="high">High</option>
+                          <option value="medium">Medium</option>
+                          <option value="low">Low</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Dosage Form</label>
+                        <select
+                          value={updateForm.dosage_form}
+                          onChange={(e) => setUpdateForm(prev => ({ ...prev, dosage_form: e.target.value }))}
+                          className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="tablet">Tablet</option>
+                          <option value="capsule">Capsule</option>
+                          <option value="syrup">Syrup</option>
+                          <option value="injection">Injection</option>
+                          <option value="cream">Cream</option>
+                          <option value="ointment">Ointment</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Inventory fields in grid */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
+                      <input
+                        type="text"
+                        value={updateForm.batch_no}
+                        onChange={(e) => setUpdateForm(prev => ({ ...prev, batch_no: e.target.value }))}
+                        className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        value={updateForm.quantity}
+                        onChange={(e) => setUpdateForm(prev => ({ ...prev, quantity: e.target.value }))}
+                        className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        min="0"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturing Date</label>
+                      <input
+                        type="date"
+                        value={updateForm.manufacturing_date}
+                        onChange={(e) => setUpdateForm(prev => ({ ...prev, manufacturing_date: e.target.value }))}
+                        className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                      <input
+                        type="date"
+                        value={updateForm.expiry_date}
+                        onChange={(e) => setUpdateForm(prev => ({ ...prev, expiry_date: e.target.value }))}
+                        className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
+                      <input
+                        type="number"
+                        value={updateForm.unit_price}
+                        onChange={(e) => setUpdateForm(prev => ({ ...prev, unit_price: e.target.value }))}
+                        className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                      <input
+                        type="text"
+                        value={updateForm.supplier}
+                        onChange={(e) => setUpdateForm(prev => ({ ...prev, supplier: e.target.value }))}
+                        className="p-2 w-full border rounded focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSubmit}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md font-medium mt-6"
+                  >
+                    {modalMode === 'update' ? 'Update Medicine' : 'Add Medicine'}
+                  </button>
                 </div>
               )}
-            </>
-          )}
-
-          {/* Pagination Controls - Only show if there are items */}
-          {inventory.length > 0 && paginationControls}
-        </>
-      )}
-
-      {/* Update Quantity Modal */}
-      {showUpdateModal && (inventoryType === 'medicine' ? renderModal() : renderEquipmentModal())}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
