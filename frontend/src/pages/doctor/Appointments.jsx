@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from 'axios';
+import { Calendar, Clock, User, Filter, Plus, Search, ChevronRight, Calendar as CalendarIcon, Clock as ClockIcon, User as UserIcon, Filter as FilterIcon, Plus as PlusIcon, Search as SearchIcon, ChevronRight as ChevronRightIcon, X, RefreshCw, Download, Eye } from 'lucide-react';
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
-  // const doctorId = "10008"; // Replace with dynamic doctor ID
-  const doctorId = localStorage.getItem("role_id"); // Get the doctor ID from local storage
-  console.log("doctorId  " ,  doctorId); 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const doctorId = localStorage.getItem("role_id");
   const navigate = useNavigate();
 
   const fetchAppointmentsByDoctorId = async (doctorId) => {
     try {
+      setIsLoading(true);
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctors/appointments`, {
         params: { user: doctorId },
         headers: {
@@ -19,10 +22,12 @@ const Appointments = () => {
         },
       });
   
-      return response.data; // Axios automatically parses JSON
+      return response.data;
     } catch (error) {
       console.error("Failed to fetch appointments:", error.message);
       return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -35,7 +40,6 @@ const Appointments = () => {
   }, [doctorId]);
 
   const handleConsultationClick = (patientId, appointmentId) => {
-    // Navigate to the specific consultation with the requested URL structure
     navigate(`/doctor/patient-consultations/${patientId}/consultation/${appointmentId}`);
   };
 
@@ -43,114 +47,327 @@ const Appointments = () => {
     navigate(`/doctor/patient-consultations/${patientId}`);
   };
   
-  // Filter appointments based on status
-  const filteredAppointments = statusFilter === "all" 
-    ? appointments 
-    : appointments.filter(appointment => appointment.status === statusFilter);
+  const handleRefreshAppointments = async () => {
+    const data = await fetchAppointmentsByDoctorId(doctorId);
+    setAppointments(data);
+  };
+
+  const handleQuickView = (appointment) => {
+    setSelectedAppointment(appointment);
+  };
+
+  const closeQuickView = () => {
+    setSelectedAppointment(null);
+  };
+  
+  // Filter appointments based on status and search query
+  const filteredAppointments = appointments
+    .filter(appointment => 
+      statusFilter === "all" || appointment.status === statusFilter
+    )
+    .filter(appointment =>
+      appointment.patientName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'scheduled':
+        return 'bg-blue-50 text-blue-700 border border-blue-200';
+      case 'ongoing':
+        return 'bg-amber-50 text-amber-700 border border-amber-200';
+      case 'completed':
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border border-gray-200';
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+  };
+
+  const getAppointmentCount = (status) => {
+    if (status === 'all') return appointments.length;
+    return appointments.filter(appointment => appointment.status === status).length;
+  };
 
   return (
-    <div className="p-6 bg-gray-50">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Appointments</h1>
-          
-          <div className="flex space-x-4">
-            {/* Status Filter Toggle */}
-            <div className="flex items-center bg-white rounded-lg shadow px-2">
-              <button 
-                onClick={() => setStatusFilter("all")}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${statusFilter === "all" ? "bg-indigo-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}
-              >
-                All
-              </button>
-              <button 
-                onClick={() => setStatusFilter("scheduled")}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${statusFilter === "scheduled" ? "bg-indigo-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}
-              >
-                Scheduled
-              </button>
-              <button 
-                onClick={() => setStatusFilter("ongoing")}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${statusFilter === "ongoing" ? "bg-indigo-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}
-              >
-                Ongoing
-              </button>
-              <button 
-                onClick={() => setStatusFilter("completed")}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${statusFilter === "completed" ? "bg-indigo-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}
-              >
-                Completed
-              </button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Appointments</h1>
+              <p className="mt-2 text-sm text-gray-600">Manage and view your patient appointments</p>
             </div>
             
-            {/* Add Appointment Button */}
-            <Link 
-              to="/doctor/book-appointment" 
-              className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow"
-            >
-              Add Appointment
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Search Bar */}
+              <div className="relative flex items-center">
+                <div className="absolute left-3 flex items-center justify-center">
+                  <SearchIcon className="text-gray-400" size={18} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search patients..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full sm:w-64 bg-white shadow-sm transition-all"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center bg-white rounded-xl shadow-sm border border-gray-200 p-1">
+                <button 
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    statusFilter === "all" 
+                      ? "bg-indigo-500 text-white shadow-sm" 
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  All <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{getAppointmentCount('all')}</span>
+                </button>
+                <button 
+                  onClick={() => setStatusFilter("scheduled")}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    statusFilter === "scheduled" 
+                      ? "bg-indigo-500 text-white shadow-sm" 
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Scheduled <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{getAppointmentCount('scheduled')}</span>
+                </button>
+                <button 
+                  onClick={() => setStatusFilter("ongoing")}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    statusFilter === "ongoing" 
+                      ? "bg-indigo-500 text-white shadow-sm" 
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Ongoing <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{getAppointmentCount('ongoing')}</span>
+                </button>
+                <button 
+                  onClick={() => setStatusFilter("completed")}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                    statusFilter === "completed" 
+                      ? "bg-indigo-500 text-white shadow-sm" 
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Completed <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{getAppointmentCount('completed')}</span>
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleRefreshAppointments}
+                  className="inline-flex items-center justify-center px-4 py-2.5 bg-white text-gray-700 font-medium rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 shadow-sm transition-all border border-gray-200"
+                  title="Refresh appointments"
+                >
+                  <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+                </button>
+                
+                <Link 
+                  to="/doctor/book-appointment" 
+                  className="inline-flex items-center justify-center px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-sm transition-all"
+                >
+                  <PlusIcon size={18} className="mr-2" />
+                  Add Appointment
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
         
         {/* Appointments List */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Table Header */}
-          <div className="grid grid-cols-6 text-gray-700 font-medium bg-gray-50 border-b">
-            <div className="p-4">Patient Name</div>
-            <div className="p-4">Date</div>
-            <div className="p-4">Time</div>
-            <div className="p-4">Type</div>
-            <div className="p-4">Status</div>
-            <div className="p-4">Action</div>
+          <div className="grid grid-cols-7 text-gray-700 font-medium bg-gray-50 border-b px-6 py-4">
+            <div className="flex items-center">
+              <UserIcon size={16} className="mr-2 text-indigo-500" />
+              Patient Name
+            </div>
+            <div className="flex items-center">
+              <CalendarIcon size={16} className="mr-2 text-indigo-500" />
+              Date
+            </div>
+            <div className="flex items-center">
+              <ClockIcon size={16} className="mr-2 text-indigo-500" />
+              Time
+            </div>
+            <div className="flex items-center">
+              <FilterIcon size={16} className="mr-2 text-indigo-500" />
+              Type
+            </div>
+            <div>Status</div>
+            <div className="col-span-2">Actions</div>
           </div>
 
           {/* Table Rows */}
-          {filteredAppointments.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+              <p className="mt-4 text-gray-500">Loading appointments...</p>
+            </div>
+          ) : filteredAppointments.length > 0 ? (
             filteredAppointments.map((appointment) => (
               <div 
                 key={appointment.id} 
-                className="grid grid-cols-6 border-b hover:bg-gray-50 transition-colors"
+                className="grid grid-cols-7 border-b hover:bg-gray-50 transition-colors px-6 py-4"
               >
                 <div 
-  className="p-4 font-medium text-indigo-600 cursor-pointer hover:underline"
-  onClick={(e) => {
-    e.stopPropagation();
-    handlePatientClick(appointment.patientId);
-  }}
->
-  {appointment.patientName}
-</div>
-                <div className="p-4 text-gray-700">{appointment.date}</div>
-                <div className="p-4 text-gray-700">{appointment.time}</div>
-                <div className="p-4 text-gray-700 capitalize">{appointment.appointmentType}</div>
-                <div className="p-4">
-                  <span className={`px-2 py-1 text-xs rounded-full text-white ${
-                    appointment.status === 'scheduled' ? 'bg-indigo-500' :
-                    appointment.status === 'ongoing' ? 'bg-indigo-500' : 'bg-indigo-500'
-                  }`}>
+                  className="font-medium text-indigo-600 cursor-pointer hover:underline flex items-center"
+                  onClick={() => handlePatientClick(appointment.patientId)}
+                >
+                  <UserIcon size={16} className="mr-2 text-gray-400" />
+                  {appointment.patientName}
+                </div>
+                <div className="text-gray-700 flex items-center">
+                  <CalendarIcon size={16} className="mr-2 text-gray-400" />
+                  {appointment.date}
+                </div>
+                <div className="text-gray-700 flex items-center">
+                  <ClockIcon size={16} className="mr-2 text-gray-400" />
+                  {appointment.time}
+                </div>
+                <div className="text-gray-700 capitalize flex items-center">
+                  <FilterIcon size={16} className="mr-2 text-gray-400" />
+                  {appointment.appointmentType}
+                </div>
+                <div>
+                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
                     {appointment.status}
                   </span>
                 </div>
-                <div className="p-4">
+                <div className="col-span-2 flex gap-2">
+                  <button
+                    onClick={() => handleQuickView(appointment)}
+                    className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-1 transition-all"
+                    title="Quick view"
+                  >
+                    <Eye size={16} className="mr-1" />
+                    Quick View
+                  </button>
                   <button
                     onClick={() => handleConsultationClick(appointment.patientId, appointment.id)}
-                    className="px-3 py-1 bg-indigo-600 text-white text-sm font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+                    className="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transition-all shadow-sm"
                   >
-                    Details
+                    <ChevronRightIcon size={16} className="mr-1" />
+                    View Details
                   </button>
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-center p-8 text-gray-500 col-span-6">
-              {statusFilter === "all" 
-                ? "No appointments found." 
-                : `No ${statusFilter} appointments found.`}
+            <div className="text-center py-16">
+              <div className="text-gray-300 mb-4">
+                <CalendarIcon size={64} className="mx-auto" />
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 mb-2">No appointments found</h3>
+              <p className="text-gray-500 max-w-md mx-auto">
+                {statusFilter === "all" 
+                  ? "You don't have any appointments scheduled." 
+                  : `You don't have any ${statusFilter} appointments.`}
+              </p>
+              <Link 
+                to="/doctor/book-appointment" 
+                className="inline-flex items-center justify-center px-4 py-2 mt-6 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-sm transition-all"
+              >
+                <PlusIcon size={18} className="mr-2" />
+                Schedule New Appointment
+              </Link>
             </div>
           )}
         </div>
       </div>
+
+      {/* Quick View Modal */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Appointment Details</h3>
+              <button 
+                onClick={closeQuickView}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <UserIcon size={18} className="text-indigo-500 mr-3" />
+                <div>
+                  <p className="text-sm text-gray-500">Patient Name</p>
+                  <p className="font-medium">{selectedAppointment.patientName}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <CalendarIcon size={18} className="text-indigo-500 mr-3" />
+                <div>
+                  <p className="text-sm text-gray-500">Date</p>
+                  <p className="font-medium">{selectedAppointment.date}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <ClockIcon size={18} className="text-indigo-500 mr-3" />
+                <div>
+                  <p className="text-sm text-gray-500">Time</p>
+                  <p className="font-medium">{selectedAppointment.time}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <FilterIcon size={18} className="text-indigo-500 mr-3" />
+                <div>
+                  <p className="text-sm text-gray-500">Type</p>
+                  <p className="font-medium capitalize">{selectedAppointment.appointmentType}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Status</p>
+                <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedAppointment.status)}`}>
+                  {selectedAppointment.status}
+                </span>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={closeQuickView}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  closeQuickView();
+                  handleConsultationClick(selectedAppointment.patientId, selectedAppointment.id);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all shadow-sm"
+              >
+                View Full Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
