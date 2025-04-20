@@ -31,7 +31,14 @@ export const fetchConsultationsByPatientId = async (patientId, axiosInstance) =>
     // Transform the data to match the component's expected format
     const formattedConsultations = pastConsultations.map(consult => ({
       id: consult._id,
-      date: new Date(consult.booked_date_time).toLocaleString(),
+      date: new Date(consult.booked_date_time).toLocaleString(undefined, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true, // optional: for AM/PM format
+      }),
       doctor: consult.doctor.name,
       location: consult.appointment_type,
       doctorId: consult.doctor_id,

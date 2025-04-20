@@ -13,4 +13,9 @@ export default defineConfig({
         "@": path.resolve(__dirname, "./src"),
       },
     },
+  server: {
+    port: 5173, // change this to whatever port you want
+    strictPort: true, // optional: will throw an error if the port is taken
+    open: true // optional: opens browser automatically
+  }
 })
