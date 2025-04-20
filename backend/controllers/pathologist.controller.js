@@ -59,6 +59,7 @@ export const searchPatientInfoAndTest = async (req, res) => {
         ...consultation._doc,
         doctorName:
           consultation.doctor_id?.employee_id?.name || "Unknown Doctor",
+        reports: consultation.reports || [],
       })),
     });
   } catch (error) {

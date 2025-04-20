@@ -10,18 +10,33 @@ const PatientInfo = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [lastConsultation, setLastConsultation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showDispenseDialog, setShowDispenseDialog] = useState(false);
+  const [selectedDispense, setSelectedDispense] = useState(null);
+  const [dispenseQuantity, setDispenseQuantity] = useState('');
 
   const handleDispenseMedicine = async (prescriptionId, entryId, currentDispensedQty, totalQty) => {
+    setSelectedDispense({ prescriptionId, entryId, currentDispensedQty, totalQty });
+    setDispenseQuantity('');
+    setShowDispenseDialog(true);
+  };
+
+  const handleConfirmDispense = async () => {
     try {
-      if (currentDispensedQty >= totalQty) {
-        alert('All medicines have already been dispensed');
+      const qty = parseInt(dispenseQuantity);
+      if (isNaN(qty) || qty <= 0) {
+        alert('Please enter a valid quantity');
+        return;
+      }
+
+      if (qty + selectedDispense.currentDispensedQty > selectedDispense.totalQty) {
+        alert('Dispensing quantity exceeds the total prescribed quantity');
         return;
       }
 
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL}/pharmacists/prescription/${prescriptionId}/entry/${entryId}`,
+        `${import.meta.env.VITE_API_URL}/pharmacists/prescription/${selectedDispense.prescriptionId}/entry/${selectedDispense.entryId}`,
         {
-          dispensed_qty: totalQty
+          dispensed_qty: selectedDispense.currentDispensedQty + qty
         }
       );
 
@@ -36,10 +51,11 @@ const PatientInfo = () => {
         }
       );
       setPrescriptions(searchResponse.data.prescriptions || []);
+      setShowDispenseDialog(false);
 
     } catch (error) {
       console.error("Error dispensing medicine:", error);
-      alert('Failed to dispense medicine. Please try again.');
+      alert('Failed to dispense medicine. Please try again.\n ' + error.message);
     }
   };
 
@@ -88,15 +104,16 @@ const PatientInfo = () => {
       try {
         if (role === 'pathologist') {
           const data = await fetchPrescribedTests(patientId);
+          console.log(data);
           setPatientDetails(data.patient);
-          setTests(data.tests || []);
-          setLastConsultation(data.lastConsultation);
+          const consultations = data.consultations || [];
+          setTests(consultations.map(consultation => consultation.reports).flat() || []);
+          setLastConsultation(data.consultations[0]);
         } else if (role === 'pharmacist') {
           const data = await fetchPrescribedMedicines(patientId);
           setPatientDetails(data.patient || null);
           setPrescriptions(data.prescriptions || []);
-          setLastConsultation(data.lastConsultation || null);
-          console.log(lastConsultation);
+          setLastConsultation(data.consultations[0]);
         }
       } catch (error) {
         console.error("Error fetching patient data:", error);
@@ -176,13 +193,13 @@ const PatientInfo = () => {
           <div className="bg-gray-50 p-4 rounded-md shadow-sm">
             <div className="grid grid-cols-2 gap-4">
               <p><span className="font-medium">Date:</span> {new Date(lastConsultation.createdAt).toLocaleDateString() || new Date().toLocaleDateString()}</p>
-              <p><span className="font-medium">Doctor ID:</span> {lastConsultation.doctor_id || "Dr. Prem Singhania"}</p>
+              <p><span className="font-medium">Doctor ID:</span> {lastConsultation.doctor_id.employee_id.name || "Dr. Prem Singhania"}</p>
               <p><span className="font-medium">Reason:</span> {lastConsultation.reason || "Regular Checkup"}</p>
               <p>
                 <span className="font-medium">Status:</span>
                 <span className={`ml-2 ${lastConsultation.status === 'Completed' ? 'text-green-600' :
-                    lastConsultation.status === 'Scheduled' ? 'text-blue-600' :
-                      'text-yellow-600'
+                  lastConsultation.status === 'Scheduled' ? 'text-blue-600' :
+                    'text-yellow-600'
                   }`}>
                   {lastConsultation.status}
                 </span>
@@ -194,13 +211,13 @@ const PatientInfo = () => {
 
       {role === 'pathologist' && (
         <div className='border-t border-gray-300 w-full pt-4'>
-          <p className='font-bold pb-3'>Prescribed Tests</p>
+          <p className='font-bold pb-3'>Pending Reports</p>
           {tests.length > 0 ? (
             <div>
               <table className='table-auto w-full border border-gray-700'>
                 <thead>
                   <tr className='bg-gray-100'>
-                    <th className='px-4 py-2 border border-gray-700 text-center'>Test Name</th>
+                    <th className='px-4 py-2 border border-gray-700 text-center'>Report Type</th>
                     <th className='px-4 py-2 border border-gray-700 text-center'>Status</th>
                   </tr>
                 </thead>
@@ -208,9 +225,9 @@ const PatientInfo = () => {
                   {tests.map((test, index) => (
                     <tr key={index}>
                       <td className='px-4 py-2 border border-gray-700 text-center'>{test.title}</td>
-                      <td className={`px-4 py-2 border border-gray-700 text-center font-semibold ${test.status === 'pending' ? 'text-red-500' : 'text-black'
+                      <td className={`px-4 py-2 border border-gray-700 text-center font-semibold ${test.status === 'pending' ? 'text-red-500' : 'text-green-500'
                         }`}>
-                        {test.status.charAt(0).toUpperCase() + test.status.slice(1)}
+                        {test.status === 'pending' ? 'Report Pending' : 'Report Complete'}
                       </td>
                     </tr>
                   ))}
@@ -218,7 +235,7 @@ const PatientInfo = () => {
               </table>
             </div>
           ) : (
-            <p className="">No tests prescribed.</p>
+            <p className="">No pending reports.</p>
           )}
         </div>
       )}
@@ -271,8 +288,8 @@ const PatientInfo = () => {
                             )}
                             disabled={entry.dispensed_qty >= entry.quantity}
                             className={`px-4 py-2 rounded ${entry.dispensed_qty >= entry.quantity
-                                ? 'bg-gray-300 cursor-not-allowed'
-                                : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer'
+                              ? 'bg-gray-300 cursor-not-allowed'
+                              : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer'
                               }`}
                           >
                             {entry.dispensed_qty >= entry.quantity ? 'Already Dispensed' : 'Dispense'}
@@ -287,6 +304,42 @@ const PatientInfo = () => {
           ) : (
             <p>No prescriptions found.</p>
           )}
+        </div>
+      )}
+
+      {/* Dispense Dialog */}
+      {showDispenseDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Enter Quantity to Dispense</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quantity (Remaining: {selectedDispense.totalQty - selectedDispense.currentDispensedQty})
+              </label>
+              <input
+                type="number"
+                value={dispenseQuantity}
+                onChange={(e) => setDispenseQuantity(e.target.value)}
+                min="1"
+                max={selectedDispense.totalQty - selectedDispense.currentDispensedQty}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDispenseDialog(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDispense}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
