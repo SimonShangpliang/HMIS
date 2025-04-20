@@ -20,14 +20,14 @@ const PatientConsultations = () => {
   const fetchPatientDetails = async () => {
     try {
       // TODO: Replace with actual API call
-      // const response = await fetch(`/api/patients/${patientId}`);
-      // const data = await response.json();
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patients/profile/${patientId}`);
+      const data = await response.json();
       
       // Mock data for now
       const patientData = {
         id: parseInt(patientId),
-        name: ["John Doe", "Jane Smith", "Robert Johnson", "Emily Williams"][parseInt(patientId) - 1],
-        contact: ["555-123-4567", "555-987-6543", "555-456-7890", "555-789-0123"][parseInt(patientId) - 1]
+        name: data.name,
+        contact: data.phone_number
       };
       
       setPatient(patientData);
@@ -37,80 +37,41 @@ const PatientConsultations = () => {
     }
   };
 
-  // Fetch consultations for this patient
   const fetchConsultations = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/consultations?patient_id=${patientId}`);
-      // const data = await response.json();
-      
-      // Mock data based on the schema from the image
-      const mockConsultations = [
-        {
-          consult_id: 101,
-          patient_id: parseInt(patientId),
-          doctor_id: 3,
-          doctor_name: "Dr. Sarah Johnson", // Additional field for display
-          booked_date_time: "2025-03-28T10:30:00",
-          status: "completed",
-          reason: "Annual checkup",
-          created_by: 2,
-          created_at: "2025-03-20T08:15:00",
-          actual_start_datetime: "2025-03-28T10:35:00",
-          remark: "Patient is in good health",
-          diagnosis: "Healthy, no concerns",
-          bill_id: 1001,
-          prescription: true,
-          reports: false,
-          recordedAt: "2025-03-28"
-        },
-        {
-          consult_id: 102,
-          patient_id: parseInt(patientId),
-          doctor_id: 5,
-          doctor_name: "Dr. Michael Chen", // Additional field for display
-          booked_date_time: "2025-04-15T14:00:00",
-          status: "scheduled",
-          reason: "Follow-up on medication",
-          created_by: 2,
-          created_at: "2025-04-01T11:20:00",
-          actual_start_datetime: null,
-          remark: "",
-          diagnosis: "",
-          bill_id: null,
-          prescription: false,
-          reports: false,
-          recordedAt: null
-        },
-        {
-          consult_id: 103,
-          patient_id: parseInt(patientId),
-          doctor_id: 3,
-          doctor_name: "Dr. Sarah Johnson", // Additional field for display
-          booked_date_time: "2025-02-10T09:15:00",
-          status: "cancelled",
-          reason: "Flu symptoms",
-          created_by: 2,
-          created_at: "2025-02-08T16:45:00",
-          actual_start_datetime: null,
-          remark: "Patient called to cancel",
-          diagnosis: "",
-          bill_id: null,
-          prescription: false,
-          reports: false,
-          recordedAt: "2025-02-08"
-        }
-      ];
-      
-      setConsultations(mockConsultations);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patients/${patientId}/consultations`);
+      const data = await response.json();
+  
+      // Normalize consultations for display
+      const formattedConsultations = data.map((consult) => ({
+        consult_id: consult._id,
+        patient_id: consult.patient_id,
+        doctor_id: consult.doctor?.id || consult.doctor_id,
+        doctor_name: consult.doctor?.name || "Unknown Doctor",
+        booked_date_time: consult.booked_date_time,
+        status: consult.status,
+        reason: consult.reason || "N/A",
+        created_by: consult.createdBy || null,
+        created_at: consult.createdAt,
+        actual_start_datetime: consult.actual_start_datetime || null,
+        remark: consult.remark || "",
+        diagnosis: consult.diagnosis?.map(d => d.name).join(', ') || "",
+        bill_id: consult.bill_id || null, // if exists
+        prescription: consult.prescription?.length > 0,
+        reports: consult.reports?.length > 0,
+        recordedAt: consult.recordedAt || null
+      }));
+  
+      setConsultations(formattedConsultations);
       setLoading(false);
     } catch (error) {
       console.error("Failed to fetch consultations:", error);
-      setError("Failed to load consultations");
+      
       setLoading(false);
     }
   };
+  
 
   // View consultation details function
   const viewConsultationDetails = (consultId) => {

@@ -5,7 +5,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import axios from 'axios';
 import { Search } from 'lucide-react';
 
-async function fetchConsultations(doctorId = null) {
+
+async function fetchConsultations(doctorId = null,role) {
   try {
     // Skip fetch if doctorId is invalid
     if (!doctorId || parseInt(doctorId) < 10000) {
@@ -16,7 +17,9 @@ async function fetchConsultations(doctorId = null) {
       params: {
         doctorId,
         startDate: moment().startOf('month').toISOString(),
-        endDate: moment().endOf('month').toISOString()
+        endDate: moment().endOf('month').toISOString(),
+        role:role?"doctor":"receptionist",
+        
       }
     });
 
@@ -109,7 +112,7 @@ const MyCalendar = () => {
       setLoading(true);
       const doctorId = currentUserRole === 'doctor' ? userId : selectedDoctor;
       if (doctorId && parseInt(doctorId) >= 10000) {
-        const events = await fetchConsultations(doctorId);
+        const events = await fetchConsultations(doctorId, currentUserRole === 'doctor');
         setEvents(events);
       } else {
         setEvents([]);
@@ -143,7 +146,7 @@ const MyCalendar = () => {
 
       // Refresh the calendar after booking
       const doctorId = currentUserRole === 'doctor' ? userId : selectedDoctor;
-      const updatedEvents = await fetchConsultations(doctorId);
+      const updatedEvents = await fetchConsultations(doctorId, currentUserRole === 'doctor');
       setEvents(updatedEvents);
 
       setShowPrompt(false);
@@ -214,7 +217,7 @@ const MyCalendar = () => {
 
       // Refresh the calendar after update
       const doctorId = currentUserRole === 'doctor' ? userId : selectedDoctor;
-      const updatedEvents = await fetchConsultations(doctorId);
+      const updatedEvents = await fetchConsultations(doctorId, currentUserRole === 'doctor');
       setEvents(updatedEvents);
 
       setShowUpdatePrompt(false);

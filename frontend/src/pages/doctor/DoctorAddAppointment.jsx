@@ -1,55 +1,75 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from "../../context/AuthContext";
+import { 
+  Calendar, 
+  Clock, 
+  User, 
+  Users, 
+  MapPin, 
+  FileText, 
+  Mic, 
+  MicOff, 
+  Volume2,
+  Loader
+} from 'lucide-react';
 
 const DoctorAddAppointment = () => {
   const [formData, setFormData] = useState({
     patientId: '',
     doctorId: '',
+    date: '',
     time: '',
     roomNo: '',
-    date: '',
-    patientName: '',
-    doctorName: '',
-    appointmentType: 'Regular',
+    appointmentType: 'regular',
     notes: '',
   });
 
-  // States for voice recording functionality
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordedText, setRecordedText] = useState('');
-  const [recordingStatus, setRecordingStatus] = useState('');
-  const [highlightedField, setHighlightedField] = useState(null);
+  const { axiosInstance } = useAuth();
 
-  // States for AI processing
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [aiMessage, setAiMessage] = useState('');
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [voiceInputStatus, setVoiceInputStatus] = useState('');
+  const [voiceProcessing, setVoiceProcessing] = useState(false);
+  
+  const speechRecognitionRef = useRef(null);
 
-  // Refs for recording and transcript
-  const recognitionRef = useRef(null);
-  const currentTranscriptRef = useRef('');
-
-  // Backend API endpoint
+  // Backend API endpoint for Gemini (same as used in Support component)
   const BACKEND_API_URL = `${import.meta.env.VITE_API_URL}/gemini`;
 
-  // Animation for filled field
   useEffect(() => {
-    if (highlightedField) {
-      const timer = setTimeout(() => {
-        setHighlightedField(null);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [highlightedField]);
+    const fetchDoctorId = async () => {
+      try {
+        const employeeId = localStorage.getItem('user_id');
+        
+        if (employeeId) {
+          // Fetch the doctor_id using the employee_id from the API
+          const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/employees/doctor-id/${employeeId}`);
+          
+          if (response.data && response.data.doctor_id) {
+            setFormData(prev => ({
+              ...prev,
+              doctorId: response.data.doctor_id
+            }));
+          } else {
+            console.error('Doctor ID not found in response:', response.data);
+            setMessage({
+              type: 'error',
+              text: 'Could not retrieve doctor information. Please contact system administrator.'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching doctor ID:', error);
+        setMessage({
+          type: 'error',
+          text: 'Failed to fetch doctor information. Please try again or contact IT support.'
+        });
+      }
+    };
 
-  // Animation for success message
-  useEffect(() => {
-    if (showSuccessAnimation) {
-      const timer = setTimeout(() => {
-        setShowSuccessAnimation(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccessAnimation]);
+    fetchDoctorId();
+  }, [axiosInstance]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,281 +79,279 @@ const DoctorAddAppointment = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Appointment Data:', formData);
-    // Clear form or show success message
-    alert('Appointment booked successfully!');
-    setFormData({
-      patientId: '',
-      doctorId: '',
-      time: '',
-      roomNo: '',
-      date: '',
-      patientName: '',
-      doctorName: '',
-      appointmentType: 'Regular',
-      notes: '',
-    });
-    setRecordedText('');
-    setAiMessage('');
-  };
-
-  // Start recording
-  const startRecording = () => {
-    // Check if SpeechRecognition is available
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setRecordingStatus('Speech recognition not supported in this browser.');
-      return;
-    }
-
-    // Clear previous context
-    setIsRecording(true);
-    setRecordingStatus('Listening...');
-    setRecordedText('');
-    setAiMessage('');
-
-    // Reset transcript ref
-    currentTranscriptRef.current = '';
-
-    // Reset field highlighting
-    setHighlightedField(null);
-    setShowSuccessAnimation(false);
-
-    // Set up speech recognition
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-
-    recognitionRef.current.onstart = () => {
-      setRecordingStatus('Listening...');
-    };
-
-    recognitionRef.current.onresult = (event) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      // Update both the state and the ref
-      setRecordedText(transcript);
-      currentTranscriptRef.current = transcript;
-    };
-
-    recognitionRef.current.onerror = (event) => {
-      setRecordingStatus(`Error: ${event.error}`);
-      stopRecording();
-    };
-
-    recognitionRef.current.onend = () => {
-      setRecordingStatus('Processing your voice input...');
-      // Process using the ref value which has the latest transcript
-      if (currentTranscriptRef.current) {
-        processVoiceWithAI(currentTranscriptRef.current);
-      } else {
-        setRecordingStatus('No speech detected. Try again.');
-      }
-    };
-
-    recognitionRef.current.start();
-  };
-
-  // Stop recording
-  const stopRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  // Function to call the backend API with voice transcript
-  const processVoiceWithAI = async (transcript) => {
-    if (!transcript.trim()) {
-      setRecordingStatus('No text to process. Please try again.');
-      return;
-    }
-
-    setIsProcessing(true);
-    setAiMessage('Extracting appointment details...');
+    setLoading(true);
+    setMessage({ type: '', text: '' });
 
     try {
-      // Create a special prompt for the appointment form
-      const appointmentPrompt = `
-        You are a hospital management system assistant that helps fill in appointment forms.
-        Parse the following spoken request and extract structured information for a patient appointment.
-        
-        Return the information in the following JSON format:
-        {
-          "patientId": "",
-          "patientName": "",
-          "doctorId": "",
-          "doctorName": "",
-          "date": "YYYY-MM-DD",
-          "time": "HH:MM",
-          "roomNo": "",
-          "appointmentType": "Regular/Emergency/Follow-up/Consultation",
-          "notes": ""
-        }
-        
-        Only include fields that can be confidently extracted from the request. For appointment types, only use one of: Regular, Emergency, Follow-up, or Consultation.
-        
-        Voice transcript: ${transcript}
-      `;
+      // Create the consultation request only
+      const consultationData = {
+        patient_id: formData.patientId,
+        doctor_id: formData.doctorId,
+        booked_date_time: `${formData.date}T${formData.time}`,
+        reason: formData.notes,
+        appointment_type: formData.appointmentType.toLowerCase(),
+        created_by: 10126, // ID for appointments created by doctors
+        status: 'requested'
+      };
 
-      // Send request to our backend API
-      const response = await fetch(BACKEND_API_URL, {
-        method: 'POST',
+      // Post the consultation request to be reviewed by receptionist
+      await axiosInstance.post(`${import.meta.env.VITE_API_URL}/consultations/book`, consultationData);
+
+      setMessage({
+        type: 'success',
+        text: 'Appointment request sent successfully! The receptionist will review it shortly.'
+      });
+      
+      // Reset form but keep doctor ID
+      setFormData({
+        patientId: '',
+        doctorId: formData.doctorId, // Keep doctor information
+        date: '',
+        time: '',
+        roomNo: '',
+        appointmentType: 'regular',
+        notes: '',
+      });
+    } catch (error) {
+      console.error('Error submitting appointment request:', error);
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.message || 'Failed to submit appointment request. Please try again.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Voice recognition functions
+  const startVoiceRecording = () => {
+    // Check if SpeechRecognition is available
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setVoiceInputStatus('Speech recognition not supported in this browser.');
+      return;
+    }
+
+    // Initialize SpeechRecognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    speechRecognitionRef.current = new SpeechRecognition();
+
+    speechRecognitionRef.current.continuous = true; // Keep listening until manually stopped
+    speechRecognitionRef.current.interimResults = true;
+    speechRecognitionRef.current.lang = 'en-US';
+
+    let fullTranscript = "";
+
+    speechRecognitionRef.current.onstart = () => {
+      setIsVoiceRecording(true);
+      setVoiceInputStatus('Listening... Speak clearly to describe the appointment details.');
+      fullTranscript = "";
+    };
+
+    speechRecognitionRef.current.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join(' ');
+
+      fullTranscript = transcript;
+      
+      // Update status with real-time indication that voice is being recognized
+      setVoiceInputStatus('Listening... (Voice detected)');
+    };
+
+    speechRecognitionRef.current.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setVoiceInputStatus(`Error: ${event.error}`);
+    };
+
+    speechRecognitionRef.current.onend = () => {
+      // Process the full transcript when recording ends
+      if (fullTranscript.trim()) {
+        processVoiceInput(fullTranscript);
+      } else {
+        setVoiceInputStatus('No speech detected. Try again.');
+        setIsVoiceRecording(false);
+      }
+    };
+
+    try {
+      speechRecognitionRef.current.start();
+    } catch (error) {
+      console.error('Failed to start recognition', error);
+      setVoiceInputStatus('Failed to start voice recognition.');
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+      setVoiceInputStatus('Processing your input...');
+    }
+  };
+
+  const toggleVoiceRecording = () => {
+    if (isVoiceRecording) {
+      stopVoiceRecording();
+    } else {
+      startVoiceRecording();
+    }
+  };
+
+  // Function to send speech transcript to Gemini API for field extraction
+  const processVoiceInput = async (transcript) => {
+    setVoiceProcessing(true);
+    
+    try {
+      // Create a prompt for Gemini that instructs it to extract appointment information
+      const prompt = `
+        Extract the following appointment information from this doctor's voice input:
+        - Patient ID (usually a number)
+        - Date (format in YYYY-MM-DD if possible)
+        - Time (format in HH:MM if possible)
+        - Room Number
+        - Appointment Type (regular, emergency, follow-up, or consultation)
+        - Notes or Reason for appointment
+
+        Format as JSON with keys: patientId, date, time, roomNo, appointmentType, notes.
+        For fields not mentioned, return empty strings.
+
+        Voice input: "${transcript}"
+      `;
+      
+      const response = await axiosInstance.post(BACKEND_API_URL, { message: prompt }, {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: appointmentPrompt }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        const aiText = data.data;
-
-        // Try to extract JSON from the response
+      
+      if (response.data.success && response.data.data) {
         try {
-          const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const jsonStr = jsonMatch[0];
-            const parsedData = JSON.parse(jsonStr);
-
-            // Update form with the extracted data
-            setFormData(prevData => {
-              const newData = { ...prevData };
-              const updatedFields = [];
-
-              // Only update fields that are provided by the AI
-              Object.keys(parsedData).forEach(key => {
-                if (parsedData[key] && parsedData[key] !== '') {
-                  newData[key] = parsedData[key];
-                  updatedFields.push(key);
-                }
-              });
-
-              // Set fields to highlight with animation
-              if (updatedFields.length > 0) {
-                for (const field of updatedFields) {
-                  setTimeout(() => {
-                    setHighlightedField(field);
-                  }, 300);
-                }
-              }
-
-              return newData;
-            });
-
-            setShowSuccessAnimation(true);
-            setAiMessage('Form filled with the details from your voice input.');
-          } else {
-            setAiMessage('Could not extract structured data from your voice. Please try again with more details.');
-          }
-        } catch (err) {
-          console.error('Error parsing JSON:', err);
-          setAiMessage('Error processing the AI response. Please try again.');
+          // Try to parse the response as JSON
+          let formattedText = response.data.data;
+          
+          // Find JSON content between triple backticks or regular text
+          let jsonMatch = formattedText.match(/```json\s*([\s\S]*?)\s*```/) || 
+                           formattedText.match(/```\s*([\s\S]*?)\s*```/) ||
+                           formattedText.match(/{[\s\S]*?}/);
+          
+          let jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : formattedText;
+          
+          // Clean up the string to ensure it's valid JSON
+          jsonStr = jsonStr.replace(/[\n\r]/g, ' ').trim();
+          
+          // Parse the JSON
+          const extractedData = JSON.parse(jsonStr);
+          
+          // Update form with extracted data
+          setFormData(prev => ({
+            ...prev,
+            patientId: extractedData.patientId || prev.patientId,
+            date: extractedData.date || prev.date,
+            time: extractedData.time || prev.time,
+            roomNo: extractedData.roomNo || prev.roomNo,
+            appointmentType: extractedData.appointmentType?.toLowerCase() || prev.appointmentType,
+            notes: extractedData.notes || prev.notes
+          }));
+          
+          setMessage({
+            type: 'success',
+            text: 'Voice input processed successfully! Please review the form details before submitting.'
+          });
+        } catch (parseError) {
+          console.error('Error parsing Gemini response:', parseError);
+          setMessage({
+            type: 'error',
+            text: 'Unable to process voice input. Please try speaking more clearly or enter information manually.'
+          });
         }
       } else {
-        setAiMessage('No useful information extracted. Please try speaking more clearly and include more details.');
+        setMessage({
+          type: 'error',
+          text: 'Failed to process voice input. Please try again or enter information manually.'
+        });
       }
     } catch (error) {
-      console.error('API error:', error);
-      setAiMessage(`Error: ${error.message}`);
+      console.error('Error processing voice input:', error);
+      setMessage({
+        type: 'error',
+        text: 'Error connecting to the AI service. Please try again later.'
+      });
+    } finally {
+      setVoiceProcessing(false);
+      setIsVoiceRecording(false);
+      setVoiceInputStatus('');
     }
-
-    setIsProcessing(false);
-    setRecordingStatus('');
   };
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-semibold mb-6 animate-fadeIn">
-        Appointment Booking
+      <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+        Request New Appointment
       </h2>
 
-      {/* Voice Assistant Section */}
-      <div className="mb-6 bg-white p-6 rounded-md shadow-sm relative overflow-hidden animate-scaleIn">
-        <h3 className="text-lg font-medium mb-3">Voice Assistant</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Press the button and speak the appointment details. Our AI will automatically fill the form for you.
-          <br />
-          Example: "Schedule a follow-up appointment for patient John Smith ID P12345 with Dr. Jane Wilson ID D789 on May 15th at 2:30 PM in room 302."
-        </p>
-
-        <div className="flex items-center space-x-4">
-          <button
-            type="button"
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`relative flex items-center justify-center px-4 py-3 rounded-full shadow-md focus:outline-none transition-all transform active:scale-95 ${isRecording
-                ? 'bg-red-600 text-white animate-pulse'
-                : 'bg-teal-600 text-white hover:bg-teal-700'
-              }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
-            </svg>
-            {isRecording ? 'Stop Recording' : 'Start Recording'}
-            {isRecording && (
-              <div className="absolute -inset-1 rounded-full border-2 border-red-400 opacity-75 animate-ping"></div>
-            )}
-          </button>
-
-          {isProcessing && (
-            <div className="flex items-center">
-              <div className="ml-2">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                  <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-teal-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                </div>
-              </div>
-              <span className="ml-2 text-sm text-gray-600">Processing...</span>
-            </div>
-          )}
+      {message.text && (
+        <div className={`mb-6 p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+            'bg-red-50 text-red-700 border border-red-200'
+          }`}>
+          {message.text}
         </div>
-
-        {showSuccessAnimation && (
-          <div className="absolute top-0 right-0 left-0 h-1 bg-green-500 animate-progressBar"></div>
+      )}
+      
+      {/* Voice Input Button */}
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={toggleVoiceRecording}
+          disabled={voiceProcessing}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md shadow-sm transition-all 
+          ${isVoiceRecording 
+            ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse' 
+            : 'bg-blue-600 hover:bg-blue-700 text-white'
+          } ${voiceProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}
+        >
+          {voiceProcessing ? (
+            <>
+              <Loader size={20} className="animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : isVoiceRecording ? (
+            <>
+              <MicOff size={20} />
+              <span>Stop Recording</span>
+            </>
+          ) : (
+            <>
+              <Mic size={20} />
+              <span>Add Appointment Using Voice</span>
+            </>
+          )}
+        </button>
+        
+        {voiceInputStatus && (
+          <div className="mt-2 text-sm text-blue-600 flex items-center gap-2">
+            {isVoiceRecording && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+            {voiceInputStatus}
+          </div>
         )}
-
-        {/* Status Message */}
-        {(recordingStatus || aiMessage) && (
-          <div
-            className={`mt-4 p-3 text-sm rounded animate-fadeIn ${recordingStatus.includes('Error') || aiMessage.includes('Error')
-                ? 'bg-red-100 text-red-700'
-                : isRecording
-                  ? 'bg-red-50 text-red-600 border border-red-200'
-                  : aiMessage.includes('filled')
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200'
-              }`}
-          >
-            {recordingStatus || aiMessage}
-            {recordedText && (
-              <div className="mt-2 py-1 px-2 bg-white rounded font-medium text-gray-800">
-                "{recordedText}"
-              </div>
-            )}
+        
+        {isVoiceRecording && (
+          <div className="mt-3 text-sm text-gray-600">
+            <p>Example: "Create an appointment for patient ID 12345 on April 23rd at 10:30 AM in room 305. This is a follow-up appointment for checking their blood pressure medication progress."</p>
           </div>
         )}
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded-md shadow-sm animate-slideUp"
-      >
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column */}
+          {/* Patient Information */}
           <div>
-            <div className={`mb-4 ${highlightedField === 'patientId' ? 'animate-highlight' : ''}`}>
+            <h3 className="text-lg font-medium mb-4 text-gray-700 flex items-center">
+              <User size={18} className="mr-2" />
+              Patient Information
+            </h3>
+
+            <div className="mb-4">
               <label className="block text-gray-700 text-sm font-medium mb-2">
                 Patient ID:
               </label>
@@ -342,69 +360,20 @@ const DoctorAddAppointment = () => {
                 name="patientId"
                 value={formData.patientId}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'patientId'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
-                required
-              />
-            </div>
-
-            <div className={`mb-4 ${highlightedField === 'patientName' ? 'animate-highlight' : ''}`}>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Patient Name:
-              </label>
-              <input
-                type="text"
-                name="patientName"
-                value={formData.patientName}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'patientName'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
-                required
-              />
-            </div>
-
-            <div className={`mb-4 ${highlightedField === 'date' ? 'animate-highlight' : ''}`}>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Date:
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'date'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
-                required
-              />
-            </div>
-
-            <div className={`mb-4 ${highlightedField === 'time' ? 'animate-highlight' : ''}`}>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Time:
-              </label>
-              <input
-                type="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'time'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
               />
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Doctor Information */}
           <div>
-            <div className={`mb-4 ${highlightedField === 'doctorId' ? 'animate-highlight' : ''}`}>
+            <h3 className="text-lg font-medium mb-4 text-gray-700 flex items-center">
+              <Users size={18} className="mr-2" />
+              Doctor Information
+            </h3>
+
+            <div className="mb-4">
               <label className="block text-gray-700 text-sm font-medium mb-2">
                 Doctor ID:
               </label>
@@ -413,174 +382,121 @@ const DoctorAddAppointment = () => {
                 name="doctorId"
                 value={formData.doctorId}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'doctorId'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 required
+                readOnly
               />
-            </div>
-
-            <div className={`mb-4 ${highlightedField === 'doctorName' ? 'animate-highlight' : ''}`}>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Doctor Name:
-              </label>
-              <input
-                type="text"
-                name="doctorName"
-                value={formData.doctorName}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'doctorName'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
-                required
-              />
-            </div>
-
-            <div className={`mb-4 ${highlightedField === 'roomNo' ? 'animate-highlight' : ''}`}>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Room No:
-              </label>
-              <input
-                type="text"
-                name="roomNo"
-                value={formData.roomNo}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'roomNo'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
-                required
-              />
-            </div>
-
-            <div className={`mb-4 ${highlightedField === 'appointmentType' ? 'animate-highlight' : ''}`}>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Appointment Type:
-              </label>
-              <select
-                name="appointmentType"
-                value={formData.appointmentType}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'appointmentType'
-                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                    : 'border-gray-300'
-                  }`}
-                required
-              >
-                <option value="Regular">Regular</option>
-                <option value="Emergency">Emergency</option>
-                <option value="Follow-up">Follow-up</option>
-                <option value="Consultation">Consultation</option>
-              </select>
             </div>
           </div>
         </div>
 
+        {/* Appointment Details */}
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-4 text-gray-700 flex items-center">
+            <Calendar size={18} className="mr-2" />
+            Appointment Details
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-medium mb-2">
+                Date:
+              </label>
+              <div className="flex items-center border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-teal-500">
+                <Calendar size={16} className="ml-3 text-gray-500" />
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 focus:outline-none border-none"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-medium mb-2">
+                Time:
+              </label>
+              <div className="flex items-center border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-teal-500">
+                <Clock size={16} className="ml-3 text-gray-500" />
+                <input
+                  type="time"
+                  name="time"
+                  value={formData.time}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 focus:outline-none border-none"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-medium mb-2">
+                Room No:
+              </label>
+              <div className="flex items-center border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-teal-500">
+                <MapPin size={16} className="ml-3 text-gray-500" />
+                <input
+                  type="text"
+                  name="roomNo"
+                  value={formData.roomNo}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 focus:outline-none border-none"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              Appointment Type:
+            </label>
+            <select
+              name="appointmentType"
+              value={formData.appointmentType}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+              required
+            >
+              <option value="regular">Regular</option>
+              <option value="emergency">Emergency</option>
+              <option value="follow-up">Follow-up</option>
+              <option value="consultation">Consultation</option>
+            </select>
+          </div>
+        </div>
+
         {/* Notes Section */}
-        <div className={`mt-6 ${highlightedField === 'notes' ? 'animate-highlight' : ''}`}>
-          <label className="block text-gray-700 text-sm font-medium mb-2">
-            Notes:
-          </label>
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-4 text-gray-700 flex items-center">
+            <FileText size={18} className="mr-2" />
+            Appointment Notes
+          </h3>
+
           <textarea
             name="notes"
             value={formData.notes}
             onChange={handleChange}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all ${highlightedField === 'notes'
-                ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                : 'border-gray-300'
-              }`}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
             rows="4"
-            placeholder="Add appointment notes here..."
+            placeholder="Add appointment details, reason, or special instructions here..."
           ></textarea>
         </div>
 
         {/* Submit Button */}
-        <div className="mt-6 flex justify-center">
+        <div className="mt-8 flex justify-end">
           <button
             type="submit"
-            className="px-6 py-2 bg-teal-600 text-white font-medium rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 shadow-md transform hover:scale-105 active:scale-95"
+            disabled={loading}
+            className="px-6 py-2 bg-teal-600 text-white font-medium rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Submit
+            {loading ? 'Submitting...' : 'Submit Request'}
           </button>
         </div>
       </form>
-
-      {/* CSS for animations */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes highlight {
-          0% { background-color: rgba(16, 185, 129, 0.1); }
-          50% { background-color: rgba(16, 185, 129, 0.3); }
-          100% { background-color: rgba(16, 185, 129, 0.1); }
-        }
-        
-        @keyframes progressBar {
-          from { transform: scaleX(0); transform-origin: left; }
-          to { transform: scaleX(1); transform-origin: left; }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-in-out;
-        }
-        
-        .animate-scaleIn {
-          animation: scaleIn 0.5s ease-in-out;
-        }
-        
-        .animate-slideUp {
-          animation: slideUp 0.5s ease-in-out;
-        }
-        
-        .animate-highlight {
-          animation: highlight 1.5s ease-in-out;
-        }
-        
-        .animate-progressBar {
-          animation: progressBar 2s ease-in-out;
-        }
-        
-        .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: .5; }
-        }
-        
-        .animate-ping {
-          animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        
-        @keyframes ping {
-          75%, 100% { transform: scale(1.5); opacity: 0; }
-        }
-        
-        .animate-bounce {
-          animation: bounce 1s infinite;
-        }
-        
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-      `}</style>
     </div>
   );
 };

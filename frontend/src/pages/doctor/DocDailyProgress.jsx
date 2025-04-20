@@ -11,7 +11,7 @@ const DocDailyProgress = () => {
   // Mock data fetching function
   const fetchDailyProgressByPatientId = async (patientId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/doctors/progress/${patientId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/doctors/progress/${patientId}`);
       
       // Ensure the response is OK (status code 200-299)
       if (!response.ok) {
@@ -39,7 +39,7 @@ const DocDailyProgress = () => {
   // Mock function to get patient details
   const fetchPatientDetails = async (patientId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/patients/profile/${patientId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/patients/profile/${patientId}`);
       
       // Ensure the response is OK (status code 200-299)
       if (!response.ok) {
@@ -84,7 +84,7 @@ const DocDailyProgress = () => {
   }, [patientId]);
 
   const handleBackClick = () => {
-    navigate(`/patient-consultations/${patientId}`);
+    navigate(`/doctor/patient-consultations/${patientId}`);
   };
 
   return (

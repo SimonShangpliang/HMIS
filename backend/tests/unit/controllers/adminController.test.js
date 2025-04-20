@@ -124,7 +124,7 @@ describe('Admin Controller', () => {
           account_number: '123456789012',
           ifsc_code: 'TEST12345'
         }
-      })
+      });
       
       await Employee.create({ 
         name: 'Jane Smith', // Different name with no overlap
@@ -135,28 +135,30 @@ describe('Admin Controller', () => {
           account_number: '123456789013',
           ifsc_code: 'TEST12345'
         }
-      })
+      });
 
-      const req = { query: { searchKey: 'John' } }
+      // Modified: Use searchQuery instead of searchKey to match controller
+      const req = { query: { searchQuery: 'John' } };
       const res = {
         statusCode: null,
         responseData: null,
         status(code) {
-          this.statusCode = code
-          return this
+          this.statusCode = code;
+          return this;
         },
         json(data) {
-          this.responseData = data
-          return this
+          this.responseData = data;
+          return this;
         }
-      }
+      };
 
-      await searchEmployees(req, res)
+      await searchEmployees(req, res);
       
-      expect(res.statusCode).toBe(200)
-      // CORRECTED: The test now expects 2 matches
-      expect(res.responseData.employees.length).toBe(2)
-    })
+      expect(res.statusCode).toBe(200);
+      // Expect 1 match since only one employee has "John" in the name
+      expect(res.responseData.employees.length).toBe(1);
+      expect(res.responseData.employees[0].name).toBe('John Doe');
+    });
 
     it('should find employees by ID', async () => {
       const emp = await Employee.create({ 
@@ -168,29 +170,31 @@ describe('Admin Controller', () => {
           account_number: '123456789014',
           ifsc_code: 'TEST12345'
         }
-      })
+      });
       
-      const req = { query: { searchKey: emp._id.toString() } }
+      // Modified: Use searchQuery instead of searchKey
+      const req = { query: { searchQuery: emp._id.toString() } };
       const res = {
         statusCode: null,
         responseData: null,
         status(code) {
-          this.statusCode = code
-          return this
+          this.statusCode = code;
+          return this;
         },
         json(data) {
-          this.responseData = data
-          return this
+          this.responseData = data;
+          return this;
         }
-      }
+      };
 
-      await searchEmployees(req, res)
+      await searchEmployees(req, res);
       
-      expect(res.statusCode).toBe(200)
-      expect(res.responseData.employees.length).toBe(1)
-      expect(res.responseData.employees[0]._id.toString()).toBe(emp._id.toString())
-    })
-  })
+      expect(res.statusCode).toBe(200);
+      expect(res.responseData.employees.length).toBe(1);
+      // Since _id is a Number in your schema, compare as numbers
+      expect(res.responseData.employees[0]._id).toBe(emp._id);
+    });
+});
 
   describe('updateInventory()', () => {
     it('should handle medicine inventory updates', async () => {

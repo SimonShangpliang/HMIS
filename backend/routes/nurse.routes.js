@@ -4,7 +4,7 @@ import { authenticateUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/searchQuery', authenticateUser, searchPatientInfo);
+router.get('/searchQuery', searchPatientInfo);
 
 /**
  * Add new vitals for a patient
@@ -21,7 +21,7 @@ router.get('/searchQuery', authenticateUser, searchPatientInfo);
  * }
  * 
  */
-router.post('/patients/:patientId/vitals', authenticateUser, addPatientVitals);
+router.post('/patients/:patientId/vitals', addPatientVitals);
 
 /**
  *  Update existing vitals for a patient
@@ -38,6 +38,6 @@ router.post('/patients/:patientId/vitals', authenticateUser, addPatientVitals);
  *   "breathingRate": 16      // Required, numeric value (breaths per minute)
  * }
  */
-router.put('/patients/:patientId/vitals/:vitalId', authenticateUser, updatePatientVitals);
+router.put('/patients/:patientId/vitals/:vitalId', updatePatientVitals);
 
 export default router;

@@ -122,7 +122,7 @@ const DoctorPerformanceMetrics = () => {
       });
       
 
-      // console.log("Doctor API Response:", doctorResponse.data);
+      console.log("Doctor API Response:", doctorResponse.data);
 
       // Set doctor data from API response
       setDoctorData(doctorResponse.data.graphData.map(doc => ({

@@ -1,29 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from "../../context/AuthContext";
+
 const PatientVitals = () => {
   const [latestVital, setLatestVital] = useState(null);
   const [allVitals, setAllVitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const patientId = localStorage.getItem("user_id"); // 👈 Fetch from localStorage
+  const { axiosInstance } = useAuth();
+  
 
 
   useEffect(() => {
     const fetchPatientVitals = async () => {
-      
-      if (!patientId) {
-        setError("No patient ID found in local storage.");
-        setLoading(false);
-        return;
-      }
-
       try {
         // Fetch the latest vital
-        const latestVitalResponse = await axios.get(`${import.meta.env.VITE_API_URL}/patients/${patientId}/vitals/latest`);
+        const latestVitalResponse = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/patients/${patientId}/vitals/latest`);
         const latestVitalData = latestVitalResponse.data;
 
 
-        const allVitalsResponse = await axios.get(`${import.meta.env.VITE_API_URL}/patients/${patientId}/vitals`);
+        const allVitalsResponse = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/patients/${patientId}/vitals`);
         const allVitalsData = allVitalsResponse.data;
 
 
@@ -34,7 +31,8 @@ const PatientVitals = () => {
         console.error("Error fetching patient vitals:", error);
         setError(error.response.data.message);
       } finally {
-        setLoading(false);
+        if (!window._authFailed) setLoading(false);
+
       }
     };
 

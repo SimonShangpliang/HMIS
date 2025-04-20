@@ -30,7 +30,7 @@ const BedAssignment = () => {
       setLoading(true); // Start loading
       setError(''); // Clear previous errors
       try {
-        const response = await axios.get('http://localhost:5000/api/reception/rooms');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/reception/rooms`);
         setRoomList(response.data); // each room will have room_number and room_type
         // Set default selected room to first one
         if (response.data.length > 0) {
@@ -52,7 +52,7 @@ useEffect(() => {
       if (!selectedRoom || loading) return; // Wait until room is selected and rooms are fetched
       setError(''); // Clear previous error
       try {
-        const response = await axios.get(`http://localhost:5000/api/reception/beds?room=${selectedRoom}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/reception/beds?room=${selectedRoom}`);
         const data = response.data;
         // Transform to match your bed structure
         const transformed = {};
@@ -103,7 +103,7 @@ useEffect(() => {
     if (selectedBed && patientId && nurseId ) {
       setActionLoading(true); // Start button spinner
       try {
-        await axios.post('http://localhost:5000/api/reception/assign-bed', {
+        await axios.post(`${import.meta.env.VITE_API_URL}/reception/assign-bed`, {
           bedId: selectedBed,
           room: selectedRoom,
           patientId,
@@ -136,7 +136,7 @@ useEffect(() => {
     if (selectedBed) {
       setActionLoading(true);
       try {
-        await axios.post('http://localhost:5000/api/reception/discharge-bed', {
+        await axios.post(`${import.meta.env.VITE_API_URL}/reception/discharge-bed`, {
           bedId: selectedBed,
           room: selectedRoom,
           patientId,

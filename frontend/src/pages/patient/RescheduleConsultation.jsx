@@ -3,29 +3,30 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate, useParams } from "react-router-dom";
 import "../../styles/patient/RescheduleConsultation.css";
+import { useAuth } from "../../context/AuthContext";
+
 
 const CONFIRMATION = "Consultation rescheduled successfully";
 
-export const rescheduleConsultation = async (consultationId, newDateTime) => {
+export const rescheduleConsultation = async (consultationId, newDateTime,axiosInstance) => {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/patients/${consultationId}/reschedule`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ newDateTime }),
-    });
+    const res = await axiosInstance.put(
+      `${import.meta.env.VITE_API_URL}/patients/${consultationId}/reschedule`,
+      { newDateTime },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to reschedule consultation.");
-    }
-
-    return { success: true, consultation: data.consultation };
+    return { success: true, consultation: res.data.consultation };
   } catch (err) {
-    console.error("Reschedule error:", err);
-    return { success: false, error: err.message };
+    console.error('Reschedule error:', err);
+    return {
+      success: false,
+      error: err.response?.data?.error || err.message || 'Failed to reschedule consultation.',
+    };
   }
 };
 
@@ -33,10 +34,14 @@ const RescheduleConsultation = () => {
   // states
   const [tempDate, setTempDate] = useState(new Date());
   const [selectedSlot, setSelectedSlot] = useState("");
+  const [loading, setLoading] = useState(false);
+  
 
   // inbuilt
   const { consultationId } = useParams();
   const navigate = useNavigate();
+  const { axiosInstance } = useAuth();
+  
 
   // Message boards
   const [showConfirmModal, setShowConfirmModal] = useState(false); // ✅ Confirm modal
@@ -73,6 +78,7 @@ const RescheduleConsultation = () => {
 
   const confirmReschedule = async () => {
     setShowConfirmModal(false);
+    setLoading(true);
   
     // Parse slot time
     const [startTime] = selectedSlot.split(" - ");
@@ -85,8 +91,9 @@ const RescheduleConsultation = () => {
     // Use tempDate for the date portion
     const newDateTime = new Date(tempDate); // ✅ Use tempDate
     newDateTime.setHours(hours, minutes, 0, 0);
-  
-    const result = await rescheduleConsultation(consultationId, newDateTime);
+
+    const result = await rescheduleConsultation(consultationId, newDateTime,axiosInstance);
+    if (!window._authFailed)setLoading(false);
     if (result.success) {
       setErrorMessage(CONFIRMATION);
       setShowErrorModal(true);
@@ -96,6 +103,15 @@ const RescheduleConsultation = () => {
     }
   };  
 
+  if (loading) {
+    return (
+      <div className="bg-white p-8 min-h-screen">
+        <div className="text-center py-10">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="reschedule-container">
       <h2 className="reschedule-title">Reschedule Consultation</h2>

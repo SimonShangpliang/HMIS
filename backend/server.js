@@ -7,7 +7,6 @@ import { fileURLToPath } from "url";
 import testRoutes from "./routes/testRoutes.js";
 import employeeRoutes from "./routes/employee.routes.js";
 import geminiRoutes from "./routes/gemini.routes.js";
-
 import patientRoutes from "./routes/patient.routes.js";
 import doctorRoutes from "./routes/doctor.routes.js";
 import nurseRoutes from "./routes/nurse.routes.js";
@@ -29,11 +28,28 @@ import consultationRoutes from "./routes/consultation.routes.js";
 import cron from "node-cron";
 import initializeDailyOccupancy from "./controllers/analytics.controller.js";
 import insuranceRoutes from "./routes/insurance.routes.js";
+import resetPayrollStatus from "./controllers/adminController.js";
+import './workers/notificationWorker.js';
 dotenv.config();
 const app = express();
 app.use(cookieParser()); // This enables req.cookies
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:5173"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
@@ -56,6 +72,7 @@ cron.schedule("0 0 * * *", async () => {
   console.log("Running daily occupancy initializer at midnight...");
   await initializeDailyOccupancy();
 });
+cron.schedule('0 0 * * *', resetPayrollStatus);
 
 // Global hospital bank account
 global.hospitalBankAccount = {

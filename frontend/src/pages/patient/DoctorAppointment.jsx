@@ -3,6 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Calendar, Clock, ArrowLeft, User, Award, Star, MapPin, Phone } from "lucide-react";
 import axios from "axios";
 import "../../styles/patient/DoctorAppointment.css";
+import { useAuth } from "../../context/AuthContext";
+
+
 
 const DoctorAppointment = () => {
   const { doctorId } = useParams();
@@ -16,6 +19,8 @@ const DoctorAppointment = () => {
   const [availableTimes, setAvailableTimes] = useState([]);
   const [reason, setReason] = useState("");
   const [appointmentType, setAppointmentType] = useState("consultation");
+  const { axiosInstance } = useAuth();
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Modal state controls
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -28,14 +33,17 @@ const DoctorAppointment = () => {
     const fetchDoctorDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/patients/doctors/${doctorId}`);
+        const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/patients/doctors/${doctorId}`);
         console.log(response.data)
         setDoctor(response.data);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching doctor details:', err);
         setError('Failed to fetch doctor details. Please try again later.');
-        setLoading(false);
+      }
+      finally{
+        if (!window._authFailed) setLoading(false);
+
       }
     };
 
@@ -50,10 +58,20 @@ const DoctorAppointment = () => {
       const times = [];
       const startHour = 9;
       const endHour = 17;
+      const now = new Date();
+      const isToday = new Date(selectedDate).toDateString() === now.toDateString();
 
       for (let hour = startHour; hour < endHour; hour++) {
-        times.push(`${hour}:00`);
-        times.push(`${hour}:30`);
+        if(isToday && hour < now.getHours()) continue; // Skip past hours if today
+
+        if (!isToday || hour > now.getHours()){
+          times.push(`${hour}:00`);
+        }
+
+        if (!isToday || hour > now.getHours() || now.getMinutes() < 30) {
+          times.push(`${hour}:30`);
+        }
+
       }
 
       setAvailableTimes(times);
@@ -104,6 +122,7 @@ const DoctorAppointment = () => {
 
   const confirmBookAppointment = async () => {
     try {
+      setActionLoading(true); 
       const appointmentDateTime = new Date(selectedDate);
       const [hours, minutes] = selectedTime.split(":");
       appointmentDateTime.setHours(parseInt(hours), parseInt(minutes));
@@ -112,7 +131,7 @@ const DoctorAppointment = () => {
 
       const consultationData = {
         patient_id: patientId,
-        doctor_id: doctor.employee_id._id,
+        doctor_id: doctor._id,
         booked_date_time: appointmentDateTime,
         reason: reason,
         appointment_type: appointmentType,
@@ -120,14 +139,19 @@ const DoctorAppointment = () => {
         status:'requested'
       };
 
-      await axios.post(`${import.meta.env.VITE_API_URL}/consultations/book`, consultationData);
+      await axiosInstance.post(`${import.meta.env.VITE_API_URL}/consultations/book`, consultationData);
 
       setShowConfirmModal(false);
       navigate("/patient/consultations");
     } catch (err) {
       console.error('Error booking appointment:', err);
-      setErrorMessage("Failed to book appointment. Please try again.");
+      const message =
+      err.response?.data?.message || "Failed to book appointment. Please try again.";
+      setErrorMessage(message);
       setShowErrorModal(true); // Show error modal if the booking fails
+    }
+    finally {
+      if(!window._authFailed)setActionLoading(false); // End loading in both success and error
     }
   };
 
@@ -156,10 +180,13 @@ const DoctorAppointment = () => {
 
           <div className="doctor-header-info">
             <h2 className="doctor-name">{doctor.employee_id?.name || 'Unknown Doctor'}</h2>
+            <p className="doctor-id"><strong>ID:</strong> {doctor._id}</p>
             <p className="doctor-specialty">{doctor.specialization}</p>
             <div className="doctor-rating">
               <Star size={16} className="star-icon" />
-              <span>{doctor.rating}/5</span>
+
+              <span>{(Math.round(doctor.rating * 10) / 10).toFixed(1)}/5</span>
+
               <span className="rating-count">({doctor.num_ratings} ratings)</span>
             </div>
           </div>
@@ -238,6 +265,7 @@ const DoctorAppointment = () => {
 
           <div className="appointment-type-selector">
             <label htmlFor="appointment-type">Appointment Type:</label>
+            <div style={{ marginBottom: '10px' }}></div>
             <select
               id="appointment-type"
               value={appointmentType}
@@ -253,13 +281,15 @@ const DoctorAppointment = () => {
 
           <div className="reason-input">
             <label htmlFor="reason">Reason for Visit (Symptoms):</label>
+            <div style={{ marginBottom: '10px' }}></div>
             <textarea
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Please describe your symptoms or reason for the appointment"
-              rows={3}
+              rows={2} // Reduced vertical length
               className="reason-textarea"
+              style={{ width: '100%', resize: 'none' }} // Increased horizontal length
             />
           </div>
         </div>
@@ -286,9 +316,10 @@ const DoctorAppointment = () => {
               <button className="cancel-modal-btn" onClick={() => setShowConfirmModal(false)}>
                 No, Cancel
               </button>
-              <button className="confirm-modal-btn" onClick={confirmBookAppointment}>
-                Yes, Book
+              <button className="confirm-modal-btn" onClick={confirmBookAppointment} disabled={actionLoading}>
+                {actionLoading ? "Booking..." : "Yes, Book"}
               </button>
+
             </div>
           </div>
         </div>

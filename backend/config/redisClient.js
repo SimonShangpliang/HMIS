@@ -17,7 +17,7 @@ redisClient.on("connect", () => console.log("✅ Connected to Redis Cloud"));
 
 await redisClient.connect();
 
-const keys = await redisClient.keys('*');
+const keys = await redisClient.keys('*some-pattern*');
 for (const key of keys) {
   const val = await redisClient.get(key);
   console.log(`${key}: ${val}`);

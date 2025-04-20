@@ -2,36 +2,34 @@ import React, { useState, useEffect } from "react";
 import { Home } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns"; // You may need to install this package
+import { useAuth } from "../../context/AuthContext";
+
 
 /**
  * @desc    Fetch all consultations for a patient
  * @param   {String|Number} patientId - The ID of the patient
  * @returns {Array} - List of consultations before current datetime
  */
-export const fetchConsultationsByPatientId = async (patientId) => {
+export const fetchConsultationsByPatientId = async (patientId,axiosInstance) => {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/patients/${patientId}/consultations`);
-    const data = await res.json();
-    console.log(data)
-    if (!res.ok) {
-      throw new Error("Failed to fetch consultations");
-    }
+    const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/patients/${patientId}/consultations`);
+    const data = response.data;
+    console.log(data);
 
     // Check if we received dummy data or actual consultations
     if (data.dummy) {
       return data.consultations; // Return the dummy data as is
     }
 
-    // Handle actual data
-    // Get current date to compare
     const now = new Date();
 
     // Filter only past consultations
     const pastConsultations = Array.isArray(data)
       ? data.filter((c) => {
-        const consultDate = new Date(c.booked_date_time);
-        return consultDate < now;
-      })
+          const consultDate = new Date(c.booked_date_time);
+          const status = c.status;
+          return (consultDate < now && status !== 'cancelled') || status === "completed"; // completed consultations or past consultations
+        })
       : [];
 
     return pastConsultations;
@@ -47,6 +45,8 @@ const PreviousConsultations = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const patientId = localStorage.getItem("user_id");
+  const { axiosInstance } = useAuth();
+  
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -61,13 +61,19 @@ const PreviousConsultations = () => {
   // Load all consultations once
   useEffect(() => {
     const loadConsultations = async () => {
-      setLoading(true);
-      const data = await fetchConsultationsByPatientId(patientId);
-      setConsultations(data);
-      setLoading(false);
+      try {
+        setLoading(true);
+        const data = await fetchConsultationsByPatientId(patientId, axiosInstance);
+        setConsultations(data);
+      } catch (error) {
+        console.error("Failed to load consultations:", error);
+      } finally {
+        if (!window._authFailed) setLoading(false);
+      }
     };
     loadConsultations();
   }, [patientId]);
+  
 
   const handleConsultationClick = (id) => {
     navigate(`/patient/previous-consultations/${id}`);
@@ -86,7 +92,8 @@ const PreviousConsultations = () => {
         date: consult.date,
         doctor: consult.doctor,
         location: consult.location,
-        details: consult.details
+        details: consult.details,
+        status: consult.status
       };
     }
 
@@ -96,7 +103,8 @@ const PreviousConsultations = () => {
       date: formatDate(consult.booked_date_time),
       doctor: consult.doctor?.name || 'Unknown Doctor',
       location: `Room ${consult.doctor?.room_num || 'N/A'}`,
-      details: consult.reason || consult.appointment_type || 'Consultation'
+      details: consult.reason || consult.appointment_type || 'Consultation',
+      status: consult.status || 'Error'
     };
   };
 
@@ -121,7 +129,7 @@ const PreviousConsultations = () => {
   return (
     <div className="book-consultation">
       <header className="consultations-header">
-        <h2>Booked Consultations</h2>
+        <h2>Previous Consultations</h2>
         <Home className="home-icon cursor-pointer" onClick={() => navigate("/patient/profile")}/>
       </header>
       {!id ? (
@@ -129,11 +137,12 @@ const PreviousConsultations = () => {
         <div className="max-w-5xl mx-auto">
           {/* Table header row */}
           <div className="mb-4 rounded-md bg-gray-900">
-            <div className="grid grid-cols-4 py-5 px-4 text-white">
+            <div className="grid grid-cols-5 py-5 px-4 text-white">
               <div className="text-center font-normal">Date</div>
               <div className="text-center font-normal">Doctor</div>
               <div className="text-center font-normal">Location</div>
               <div className="text-center font-normal">Details</div>
+              <div className="text-center font-normal">Status</div>
             </div>
           </div>
 
@@ -147,7 +156,7 @@ const PreviousConsultations = () => {
                   onClick={() => handleConsultationClick(formattedConsult.id)}
                   className="mb-4 rounded-md bg-gray-900 hover:bg-gray-800 cursor-pointer transition-colors duration-200"
                 >
-                  <div className="grid grid-cols-4 py-5 px-4 text-white items-center">
+                  <div className="grid grid-cols-5 py-5 px-4 text-white items-center">
                     <div className="text-center">{formattedConsult.date}</div>
 
                     {/* Doctor Info */}
@@ -167,6 +176,7 @@ const PreviousConsultations = () => {
 
                     <div className="text-center">{formattedConsult.location}</div>
                     <div className="text-center">{formattedConsult.details}</div>
+                    <div className="text-center">{formattedConsult.status}</div>
                   </div>
                 </div>
               );

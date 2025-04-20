@@ -4,7 +4,6 @@ import bodyParser from 'body-parser';
 import cloudinary from 'cloudinary';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-
 import Payroll from '../models/payroll.js';
 import Employee from '../models/employee.js'; // Import Employee model
 import Medicine from '../models/inventory.js'; // Import Medicine model
@@ -146,23 +145,23 @@ const generatePayslipIn = async (req, res) => {
 
 export const searchEmployees = async (req, res) => { 
     try {
-        const { searchKey } = req.query;
-
+        console.log(req);
+        const { searchQuery } = req.query;
+        const searchKey = searchQuery;
         let searchKeyInt = parseInt(searchKey, 10);
         const employees = await Employee.find({
             $or: [
             { name: { $regex: searchKey, $options: 'i' } },
             { _id: !isNaN(searchKeyInt) ? searchKeyInt : undefined }
-            ].filter(condition => condition._id !== undefined)
+            ].filter(condition => condition._id  || condition.name)
         });
-
+        console.log("in backend", searchKey, searchKeyInt, employees);
         res.status(200).json({ employees });
     } catch (error) {
         console.error('Error searching employees:', error);
         res.status(500).json({ message: 'Failed to search employees', error });
     }
 };
-
 
 
 export const updateInventory = async (req, res) => {
@@ -342,11 +341,24 @@ export const addStaff = async (req, res) => {
             date_of_birth, date_of_joining, gender, blood_group, salary, aadhar_id, bank_details, 
             basic_salary, allowance, deduction 
         } = req.body;
+    
         const existingPatient = await Employee.findOne({ $or: [{ email }, { aadhar_number: aadhar_id }] });
         if (existingPatient) {
             return res.status(400).json({ message: 'Email or Aadhar ID already exists.' });
         }
+        // Calculate age from date of birth
+        const today = new Date();
+        const birthDate = new Date(date_of_birth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
 
+
+        if(basic_salary < 0 || allowance < 0 || deduction < 0){
+            return res.status(400).json({ message: 'Salary, allowance, and deduction must be non-negative.' });
+        }
         const imageUrl=req.file?.path;
         // Hash the password
         let PlainPassword=crypto.randomBytes(8).toString('base64').slice(0, 8);
@@ -428,7 +440,8 @@ export const addStaff = async (req, res) => {
             allowance: parseInt(allowance, 10),
             deduction: parseInt(deduction, 10),
             net_salary: parseInt(basic_salary, 10) + parseInt(allowance, 10) - parseInt(deduction, 10), // Calculate net_salary here
-            month_year: new Date()
+            month_year: new Date(),
+            payment_status: "pending",
         });
         // console.log(payroll);
         await payroll.save();
@@ -438,6 +451,26 @@ export const addStaff = async (req, res) => {
         res.status(500).json({ message: 'Internal server error.' });
     }
 };
+async function resetPayrollStatus() {
+    try {
+        const today = new Date();
+        if (today.getDate() > 15) {
+            const employees = await Employee.find();
+            for (const employee of employees) {
+                const payroll = await Payroll.findOne({ employee_id: employee._id });
+                if (payroll) {
+                    payroll.status = "unpaid";
+                    payroll.remaining_payment += payroll.remaining_payment; // Add remaining payment
+                    await payroll.save();
+                }
+            }
+            console.log('Payroll status reset and remaining payment added successfully.');
+        }
+    } catch (error) {
+        console.error('Error resetting payroll status:', error);
+    }
+};
+export default resetPayrollStatus;
 
 export const deleteStaff = async (req, res) => {
     try {  
@@ -538,10 +571,18 @@ export const processPayroll = async (req, res) => {
         if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
             return res.status(400).json({ message: 'Invalid employee IDs provided' });
         }
-
+        
         for (const employee_id of employee_ids) {
             // Fetch the payroll details for the employee
             const payroll = await Payroll.findOne({ employee_id });
+            if(payroll.payment_status =="paid"){
+                continue; 
+            }
+            else{
+                payroll.payment_status = "paid";
+                await payroll.save();
+            }
+
 
             if (!payroll) {
                 console.error(`Payroll not found for employee ID: ${employee_id}`);
@@ -567,27 +608,29 @@ export const processPayroll = async (req, res) => {
             await payroll.save();
 
               // Perform transaction: Add amount to employee bank and subtract from hospital bank account
-        if (global.hospitalBankAccount.balance < payroll.net_salary) {
+        if (global.hospitalBankAccount.balance < payroll.remaining_payment) {
             throw new Error('Insufficient funds in hospital bank account');
         }
 
         // Deduct from hospital account
-        global.hospitalBankAccount.balance -= payroll.net_salary;
+        global.hospitalBankAccount.balance -= payroll.remaining_payment;
 
         // Add to employee bank account
         const employeeBankAccount = await FinanceLogs.findOne({ account_type: 'employee', employee_id: employee_id });
-
+        await payroll.save();
         if (!employeeBankAccount) {
             const newEmployeeBankAccount = new FinanceLogs({
             account_type: 'employee',
             employee_id: savedEmployee._id,
-            balance: payroll.net_salary
+            balance: payroll.remaining_payment
             });
             await newEmployeeBankAccount.save();
         } else {
-            employeeBankAccount.balance += payroll.net_salary;
+            employeeBankAccount.balance += payroll.remaining_payment;
             await employeeBankAccount.save();
         }
+        payroll.remaining_payment = 0;
+        await payroll.save();
         }
         console.log('Payroll processed successfully for all employees');
 

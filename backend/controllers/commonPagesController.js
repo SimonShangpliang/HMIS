@@ -10,9 +10,8 @@ import cloudinary from "../config/cloudinary.js";
 // Get consultations for doctor's calendar
 export const getDoctorCalendar = async (req, res) => {
   try {
-    const { doctorId, startDate, endDate } = req.query;
-    // console.log(req.query);
-    
+    const { startDate, endDate, role } = req.query;
+    let { doctorId } = req.query;
     if (!doctorId) {
       return res.status(400).json({ message: "Doctor ID is required" });
     }
@@ -28,15 +27,23 @@ export const getDoctorCalendar = async (req, res) => {
       };
     }
     
+    let doctor_user;
+    if(role === "doctor"){
+      doctor_user = await Doctor.findOne({ employee_id: doctorId });
+      if (!doctor_user) {
+        return res.status(404).json({ message: "Doctor not found for this user" });
+      }
+      doctorId = doctor_user._id;
+    }
+  
     // Find all consultations for this doctor
     const consultations = await Consultation.find({
       doctor_id: doctorId,
+      status: { $ne: 'requested' }, // Exclude consultations with "requested" status
       ...dateFilter
     })
       .populate('patient_id', 'name email phone_number')
       .sort({ booked_date_time: 1 });
-    
-    // console.log(consultations);
     
     // Transform data for calendar view
     const calendarEvents = consultations.map(consultation => {
@@ -45,20 +52,37 @@ export const getDoctorCalendar = async (req, res) => {
       const endTime = new Date(startTime);
       endTime.setHours(startTime.getHours() + 1);
       
-      return {
-        id: consultation._id,
-        title: `Consultation with ${consultation.patient_id.name}`,
+      // Create a safe object with default values
+      const calendarEvent = {
+        id: consultation._id || null,
+        title: "Consultation",
         start: startTime,
         end: endTime,
-        status: consultation.status,
-        reason: consultation.reason,
-        patientId: consultation.patient_id._id,
-        patientPhone: consultation.patient_id.phone_number,
-        patientEmail: consultation.patient_id.email,
-        appointment_type:consultation.appointment_type
+        status: consultation.status || null,
+        reason: consultation.reason || null,
+        patientId: null,
+        patientPhone: null,
+        patientEmail: null,
+        appointment_type: consultation.appointment_type || null
       };
+      
+      // Safely access patient information
+      if (consultation.patient_id) {
+        // Handle case where patient exists but might lack some properties
+        calendarEvent.patientId = consultation.patient_id._id || null;
+        calendarEvent.patientPhone = consultation.patient_id.phone_number || null;
+        calendarEvent.patientEmail = consultation.patient_id.email || null;
+        
+        // Update the title if patient name exists
+        if (consultation.patient_id.name) {
+          calendarEvent.title = `Consultation with ${consultation.patient_id.name}`;
+        }
+      }
+      
+      return calendarEvent;
     });
     
+    console.log(calendarEvents);
     res.status(200).json(calendarEvents);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

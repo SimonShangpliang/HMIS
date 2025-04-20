@@ -1,0 +1,16 @@
+# .vercelignore
+
+# Ignore backend directory
+/backend/
+
+# Ignore node_modules (Vercel installs dependencies automatically)
+/node_modules/
+
+# Ignore environment files (if any)
+.env
+.env.local
+.env.*.local
+
+# Ignore logs and temporary files
+*.log
+*.tmp

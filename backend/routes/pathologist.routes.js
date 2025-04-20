@@ -4,9 +4,7 @@ import path from "path";
 import {
   searchEquipment,
   searchPatientInfoAndTest,
-  getPatientPendingTests,
-  uploadTestResults,
-  uploadStandaloneReport,
+  uploadReport,
 } from "../controllers/pathologist.controller.js";
 
 const router = express.Router();
@@ -25,7 +23,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "test-" + uniqueSuffix + path.extname(file.originalname));
+    cb(null, "report-" + uniqueSuffix + path.extname(file.originalname));
   },
 });
 
@@ -54,16 +52,6 @@ router.get("/searchBy", searchEquipment);
 
 // Patient and test routes
 router.get("/searchById", searchPatientInfoAndTest);
-router.get("/pendingTests/:patientId", getPatientPendingTests);
-router.post(
-  "/uploadTestResults",
-  upload.single("reportFile"),
-  uploadTestResults
-);
-router.post(
-  "/uploadStandaloneReport",
-  upload.single("reportFile"),
-  uploadStandaloneReport
-);
+router.post("/uploadReport", upload.single("reportFile"), uploadReport);
 
 export default router;

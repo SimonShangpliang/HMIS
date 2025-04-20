@@ -22,7 +22,8 @@ const router = express.Router();
 // router.get('/appointments', authenticateUser, fetchAppointments);
 router.get('/appointments', fetchAppointments);
 
-router.put('/appointments', authenticateUser, updateAppointments);
+// router.put('/appointments', authenticateUser, updateAppointments);
+router.put('/appointments', updateAppointments);
 
 //  Expects:
 //  - req.params.patientId: String (Patient ID)

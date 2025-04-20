@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
+import axios from 'axios';
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -10,27 +11,41 @@ const Login = () => {
   const [message, setMessage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { setToken, setRole, setUser } = useAuth();
+  const { setToken, setRole, setUser,axiosInstance} = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+  
     try {
       const res = await login({ email, password, userType });
-
+  
       setToken(res.data.accessToken);
       setRole(res.data.role);
       setUser(res.data.user);
-      localStorage.setItem("role", res.data.role);
+  
+      const employee_id = res.data.user._id;
+      const role = res.data.role;
+  
+      localStorage.setItem("role", role);
       localStorage.setItem("email", JSON.stringify(res.data.user.email));
-      localStorage.setItem("user_id", JSON.stringify(res.data.user._id));
-
+      localStorage.setItem("user_id", JSON.stringify(employee_id));
+  
+      if (userType !== "patient") {
+        const roleRes = await axios.get(`${import.meta.env.VITE_API_URL}/employees/get-role-id`, {
+          params: {
+            employee_id,
+            role
+          }
+        });
+        localStorage.setItem("role_id", roleRes.data.role_id);
+      }
       setMessage({ type: "success", text: "Login successful!" });
-
+      // Optional: add delay if you want a smoother transition
       setTimeout(() => {
         if (userType === "patient") navigate("/patient/profile");
-        else navigate(`/${res.data.role}/profile`);
+        else navigate(`/${role}/profile`);
       }, 200);
     } catch (err) {
       console.error("Login failed", err);
@@ -43,6 +58,7 @@ const Login = () => {
       setTimeout(() => setMessage(null), 5000);
     }
   };
+  
 
   return (
     <div className="relative min-h-screen bg-gray-100 flex justify-center items-center">

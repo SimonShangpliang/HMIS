@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchConsultationById } from "./ConsultationDetails";
+import { useAuth } from "../../context/AuthContext";
 
-const fetchPrescriptionsByConsultationId = async (consultationId) => {
+
+const fetchPrescriptionsByConsultationId = async (consultationId,axiosInstance) => {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/prescription`);
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch prescription");
-    }
-    const data = await res.json();
-    console.log("data here", data.consultation)
-    return data.consultation.prescription; // unwrap `prescription` key directly
+    const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/prescription`);
+    console.log("data here", response.data.consultation);
+    return response.data.consultation.prescription; // unwrap `prescription` key directly
   } catch (error) {
     console.error("Failed to fetch prescriptions:", error);
     throw error;
@@ -24,18 +21,21 @@ const ConsultationPrescriptions = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
+  const { axiosInstance } = useAuth();
+  
 
   useEffect(() => {
     const loadPrescriptions = async () => {
       try {
-        const data = await fetchPrescriptionsByConsultationId(id);
+        const data = await fetchPrescriptionsByConsultationId(id,axiosInstance);
         setPrescription(data);
-        const condata = await fetchConsultationById(id);
+        const condata = await fetchConsultationById(id,axiosInstance);
         setConsultation(condata);
       } catch (error) {
         console.error("Error loading prescriptions:", error);
       } finally {
-        setLoading(false);
+        if (!window._authFailed) setLoading(false);
+
       }
     };
 

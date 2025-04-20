@@ -26,13 +26,14 @@ const ProfileDashboard = () => {
       try {
         setLoading(true);
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/common/profile/${currentUserRole}/${userId}`);
-        const userData = response.data;
+        const data = response.data;
 
-        // Transform date strings to readable format
-        userData.date_of_birth = new Date(userData.date_of_birth).toLocaleDateString();
-        userData.date_of_joining = new Date(userData.date_of_joining).toLocaleDateString();
-
-        setUserData(userData);
+        // Store original dates and add display format
+        setUserData({
+          ...data,
+          date_of_birth_display: new Date(data.date_of_birth).toLocaleDateString(),
+          date_of_joining_display: new Date(data.date_of_joining).toLocaleDateString(),
+        });
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -82,7 +83,11 @@ const ProfileDashboard = () => {
   };
 
   const handleEdit = () => {
-    setEditData(userData);
+    const editableData = {
+      ...userData,
+      date_of_birth: userData.date_of_birth?.split('T')[0] || ''
+    };
+    setEditData(editableData);
     setIsEditing(true);
   };
 
@@ -93,6 +98,15 @@ const ProfileDashboard = () => {
   };
 
   const handleChange = (field, value, section = 'main') => {
+    // Add date validation for date_of_birth
+    if (field === 'date_of_birth') {
+      const selectedDate = new Date(value);
+      const today = new Date();
+      if (selectedDate > today) {
+        return; // Don't update if future date
+      }
+    }
+
     setEditData(prev => {
       switch (section) {
         case 'bank':
@@ -122,24 +136,20 @@ const ProfileDashboard = () => {
 
   const handleSubmit = async () => {
     try {
-      console.log(editData);
       const response = await axios.put(
         `${import.meta.env.VITE_API_URL}/common/profile/${currentUserRole}/${userId}`,
         editData
       );
 
-      // Transform the returned user data
       const updatedUser = response.data.user;
 
-      // Format dates
-      if (updatedUser.date_of_birth) {
-        updatedUser.date_of_birth = new Date(updatedUser.date_of_birth).toLocaleDateString();
-      }
-      if (updatedUser.date_of_joining) {
-        updatedUser.date_of_joining = new Date(updatedUser.date_of_joining).toLocaleDateString();
-      }
+      // Update userData with both original dates and display formats
+      setUserData({
+        ...updatedUser,
+        date_of_birth_display: new Date(updatedUser.date_of_birth).toLocaleDateString(),
+        date_of_joining_display: new Date(updatedUser.date_of_joining).toLocaleDateString()
+      });
 
-      setUserData(updatedUser);
       setIsEditing(false);
       setEditData(null);
       setError(null);
@@ -154,7 +164,7 @@ const ProfileDashboard = () => {
     { key: "Email", value: data.email, icon: <Mail size={20} /> },
     { key: "Phone", value: data.phone_number, icon: <Phone size={20} /> },
     { key: "Address", value: data.address, icon: <MapPin size={20} /> },
-    { key: "Date of Birth", value: data.date_of_birth, icon: <Calendar size={20} /> },
+    { key: "Date of Birth", value: data.date_of_birth_display, icon: <Calendar size={20} /> },
     { key: "Blood Group", value: data.bloodGrp, icon: <Award size={20} /> }
   ];
 
@@ -168,7 +178,7 @@ const ProfileDashboard = () => {
           "Not Assigned",
       icon: <Building size={20} />
     },
-    { key: "Join Date", value: data.date_of_joining, icon: <Calendar size={20} /> },
+    { key: "Join Date", value: data.date_of_joining_display, icon: <Calendar size={20} /> },
     { key: "Role", value: data.role?.charAt(0).toUpperCase() + data.role?.slice(1), icon: <Briefcase size={20} /> }
   ];
 
@@ -314,6 +324,14 @@ const ProfileDashboard = () => {
                     <option key={opt} value={opt}>{opt}</option>
                   ))}
                 </select>
+              ) : field.type === 'date' ? (
+                <input
+                  type="date"
+                  value={editData[field.key] || ''}
+                  onChange={(e) => handleChange(field.key, e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                />
               ) : field.type === 'textarea' ? (
                 <textarea
                   value={editData[field.key] || ''}

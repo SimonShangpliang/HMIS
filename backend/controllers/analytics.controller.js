@@ -888,6 +888,21 @@ export const getDoctorQuadrantData = async(req, res) => {
           }
         },
         { $unwind: "$doctorInfo" },
+
+        // Look up employee information to get the doctor's name
+        { $lookup: {
+          from: "employees",
+          localField: "doctorInfo.employee_id",
+          foreignField: "_id",
+          as: "employeeInfo"
+        }
+      },
+      { $unwind: { 
+          path: "$employeeInfo",
+          preserveNullAndEmptyArrays: true 
+        }
+      },
+
         // Look up department information directly in the pipeline
         { $lookup: {
             from: "departments",
@@ -904,7 +919,7 @@ export const getDoctorQuadrantData = async(req, res) => {
         // Project only the fields we need
         { $project: {
             doctorId: "$_id",
-            doctorName: "$doctorInfo.name",
+            doctorName: { $ifNull: ["$employeeInfo.name", "Unknown"] }, // Get name from employee
             department_id: "$doctorInfo.department_id",
             departmentName: { $ifNull: ["$departmentInfo.dept_name", "Unknown"] },
             rating: "$doctorInfo.rating",

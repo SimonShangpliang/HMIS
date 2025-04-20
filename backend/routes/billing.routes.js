@@ -10,11 +10,15 @@ import {
   getAllDetailedBillsByPatientId,
   addPayments
 } from '../controllers/billController.js';
+import { authenticateUser } from '../middleware/authMiddleware.js';
+
 
 const router = express.Router();
 
 // Get all bills for a patient
+// router.get('/patient/:patientId',authenticateUser, getBillsByPatientId);
 router.get('/patient/:patientId', getBillsByPatientId);
+
 
 // Get all bills for a patient
 router.get('/detailed/patient/:patientId', getAllDetailedBillsByPatientId);

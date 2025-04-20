@@ -15,11 +15,11 @@ const Chatbot = () => {
   const chatContainerRef = useRef(null);
   
   // Backend API endpoints - Updated to use the admin route
-  const BACKEND_API_URL = 'http://localhost:5000/api/admin/gemini';
+  const BACKEND_API_URL = `${import.meta.env.VITE_API_URL}/admin/gemini`;
   
   // API endpoints for function calling
   const API_ENDPOINTS = {
-    getEmployees: 'http://localhost:5000/api/employees',
+    getEmployees:  `${import.meta.env.VITE_API_URL}/employees`,
     // Add more endpoints here as needed
     // getPatients: 'http://localhost:5000/api/patients',
     // getDepartments: 'http://localhost:5000/api/departments',

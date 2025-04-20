@@ -1,9 +1,11 @@
 import express from 'express';
-import { searchPatientPrescriptions } from '../controllers/pharmacist.controller.js';
+import {
+  searchPatientPrescriptions,
+  updatePrescriptionEntry} from '../controllers/pharmacist.controller.js';
 
 const router = express.Router();
 
-// TODO: Add routes for pharmacy
-router.get('/prescriptions', searchPatientPrescriptions);
+router.get('/prescriptions/search', searchPatientPrescriptions);
+router.put('/prescription/:prescriptionId/entry/:entryId', updatePrescriptionEntry);
 
 export default router;

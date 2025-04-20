@@ -11,7 +11,7 @@ const DocPatientConsultations = () => {
   // Mock data fetching function
   const fetchConsultationsByPatientId = async (patientId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/doctors/consultations` ,  {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctors/consultations` ,  {
         params: { doctorId, patientId },
         headers: {
           'Content-Type': 'application/json',
@@ -34,11 +34,11 @@ const DocPatientConsultations = () => {
   }, [patientId]);
 
   const handleDailyProgressClick = () => {
-    navigate(`/patient-progress/${patientId}`);
+    navigate(`/doctor/patient-progress/${patientId}`);
   };
 
   const handleConsultationClick = (id) => {
-    navigate(`/patient-consultations/${patientId}/consultation/${id}`);
+    navigate(`/doctor/patient-consultations/${patientId}/consultation/${id}`);
   };
 
   const handleBackToAppointmentsClick = () => {

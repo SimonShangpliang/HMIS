@@ -6,7 +6,7 @@ import html2pdf from 'html2pdf.js';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import "jspdf-autotable";
-import bill from "../../../../backend/models/bill";
+import { useAuth } from "../../context/AuthContext";
 
 // API base URL - adjust as needed
 const API_BASE_URL = `${import.meta.env.VITE_API_URL}/billing`;
@@ -19,6 +19,7 @@ const Bills = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+   const {axiosInstance } = useAuth();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [newPayment, setNewPayment] = useState({
     amount: 0,
@@ -176,7 +177,7 @@ const Bills = () => {
     const fetchBills = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/patient/${patientId}`);
+        const response = await axiosInstance.get(`${API_BASE_URL}/patient/${patientId}`);
         if (response.data.success) {
           setBills(response.data.data);
         } else {
@@ -186,7 +187,9 @@ const Bills = () => {
         console.error("Error fetching bills:", err);
         setError("Failed to fetch bills. Please try again later.");
       } finally {
-        setLoading(false);
+        if (!window._authFailed) {
+          setLoading(false);
+        }
       }
     };
 
@@ -201,10 +204,10 @@ const Bills = () => {
           setLoading(true);
 
           // Fetch bill details
-          const detailsResponse = await axios.get(`${API_BASE_URL}/${selectedBill}`);
+          const detailsResponse = await axiosInstance.get(`${API_BASE_URL}/${selectedBill}`);
 
           // Fetch payments
-          const paymentsResponse = await axios.get(`${API_BASE_URL}/${selectedBill}/payments`);
+          const paymentsResponse = await axiosInstance.get(`${API_BASE_URL}/${selectedBill}/payments`);
 
           if (detailsResponse.data.success && paymentsResponse.data.success) {
             setBillDetails(detailsResponse.data.data);
@@ -216,7 +219,9 @@ const Bills = () => {
           console.error("Error fetching bill details:", err);
           setError("Failed to fetch bill details. Please try again later.");
         } finally {
-          setLoading(false);
+          if (!window._authFailed) {
+            setLoading(false);
+          }
         }
       }
     };
@@ -286,12 +291,12 @@ const Bills = () => {
   const handleAddPayment = async () => {
     try {
       setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/${selectedBill}/payments`, newPayment);
+      const response = await axiosInstance.post(`${API_BASE_URL}/${selectedBill}/payments`, newPayment);
 
       if (response.data.success) {
         // Refresh payments and bill details
-        const updatedPaymentsResponse = await axios.get(`${API_BASE_URL}/${selectedBill}/payments`);
-        const updatedDetailsResponse = await axios.get(`${API_BASE_URL}/${selectedBill}`);
+        const updatedPaymentsResponse = await axiosInstance.get(`${API_BASE_URL}/${selectedBill}/payments`);
+        const updatedDetailsResponse = await axiosInstance.get(`${API_BASE_URL}/${selectedBill}`);
 
         setPayments(updatedPaymentsResponse.data.data);
         setBillDetails(updatedDetailsResponse.data.data);
@@ -310,7 +315,9 @@ const Bills = () => {
       console.error("Error adding payment:", err);
       setError("Failed to add payment. Please try again.");
     } finally {
-      setLoading(false);
+      if (!window._authFailed) {
+        setLoading(false);
+      }
     }
   };
 

@@ -13,7 +13,8 @@ const PayrollSchema = new Schema({
     type: String, 
     enum: ["paid", "pending", "partially_paid"] 
   },
-  generation_date: Date
+  generation_date: Date,
+  remaining_payment: Number
 }, { timestamps: true });
 
 const Payroll = mongoose.model('Payroll', PayrollSchema);

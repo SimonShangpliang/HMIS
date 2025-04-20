@@ -7,7 +7,7 @@ const storage = new CloudinaryStorage({
     cloudinary:cloudinary,
     params: {
     folder: "profile_pics",
-    // format: async (req, file) => "png", // Convert all images to PNG
+    format: async (req, file) => "png", // Convert all images to PNG
     public_id: (req, file) => file.originalname.split(".")[0], 
   },
 });

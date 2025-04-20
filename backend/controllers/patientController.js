@@ -23,13 +23,36 @@ export const registerPatient = async (req, res) => {
       password
     } = req.body;
 
+    const dobDate = new Date(dob);
+    const currentDate = new Date();
+
+    if (dobDate > currentDate) {
+      return res.status(400).json({ message: 'Date of birth cannot be in the future.' });
+    }
+
+    if (height <= 0) {
+      return res.status(400).json({ message: 'Height must be a positive number.' });
+    }
+
+    if (weight <= 0) {
+      return res.status(400).json({ message: 'Weight must be a positive number.' });
+    }
+
     const existingPatient = await Patient.findOne({ $or: [{ email }, { aadhar_number: aadharId }] });
     if (existingPatient) {
         return res.status(400).json({ message: 'Email or Aadhar ID already exists.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const calculateAge = dob => new Date().getFullYear() - new Date(dob).getFullYear() - (new Date() < new Date(new Date(dob).setFullYear(new Date().getFullYear())) ? 1 : 0);
+    const calculateAge = dob => {
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      return age;
+    };
 
     const newPatient = new Patient({
       password: hashedPassword,
@@ -42,7 +65,7 @@ export const registerPatient = async (req, res) => {
       gender: gender.toLowerCase(),
       address,
       patient_info: {
-        age: calculateAge(dob),
+        age: calculateAge(dobDate),
         height: height,
         weight: weight,
         bloodGrp: bloodGroup
@@ -192,7 +215,7 @@ try {
     })
     .populate({
       path: 'department_id',
-      select: 'name',
+      select: 'dept_name',
       model: Department
     });
   

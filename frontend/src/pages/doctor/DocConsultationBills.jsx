@@ -8,7 +8,7 @@ const DocConsultationBills = ({ consultationId }) => {
 
   const fetchBillsByConsultationId = async (consultationId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/consultations/${consultationId}/bill`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/bill`);
       // console.log( "helalui", response.data.bill);  
       return response.data.bill;
     } catch (error) {

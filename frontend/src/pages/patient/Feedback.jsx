@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from "../../context/AuthContext";
 
-export const fetchConsultationsByPatientId = async (patientId) => {
+export const fetchConsultationsByPatientId = async (patientId,axiosInstance) => {
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/patients/${patientId}/consultations`);
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch consultations");
-    }
+    const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/patients/${patientId}/consultations`);
+    const data = response.data;
 
     // Check if we received dummy data or actual consultations
     if (data.dummy) {
       return data.consultations; // Return the dummy data as is
     }
-
-    // Handle actual data
-    // Get current date to compare
-
-
 
     console.log(data);
     return data;
@@ -37,6 +29,10 @@ const PatientFeedbackForm = () => {
   const [showConsultationList, setShowConsultationList] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [rating, setRating] = useState(3);
+  const { axiosInstance } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+
+  
   const [hoverRating, setHoverRating] = useState(0);
   const [feedback, setFeedback] = useState({
     comments: '',
@@ -55,7 +51,7 @@ const PatientFeedbackForm = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const allConsultations = await fetchConsultationsByPatientId(patientId);
+        const allConsultations = await fetchConsultationsByPatientId(patientId,axiosInstance);
 
         // Separate consultations with and without feedback
         const withFeedback = [];
@@ -69,7 +65,7 @@ const PatientFeedbackForm = () => {
               specialty: consultation.doctor.specialization,
               date: consultation.booked_date_time,
             });
-          } else {
+          } else if (consultation.status === "completed") {
             withoutFeedback.push({
               ...consultation,
               doctorName: consultation.doctor.name, // Align with expected format
@@ -85,7 +81,10 @@ const PatientFeedbackForm = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
-        setLoading(false);
+       
+      }
+      finally{
+        if (!window._authFailed) setLoading(false);
       }
     };
 
@@ -99,42 +98,45 @@ const PatientFeedbackForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!selectedConsultation) {
-      alert("Please select a consultation first.");
+      alert("No consultation chosen. Please select a consultation before submitting feedback.");
       return;
     }
-
-    // In a real app, you would submit feedback to an API
+  
+    setSubmitting(true);
     const feedbackData = {
-
-
       rating: rating,
       comments: feedback.comments,
     };
-
-    console.log("Submitting feedback:", feedbackData);
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/patients/` + patientId + '/consultations/' + selectedConsultation._id + '/feedback', feedbackData);
-
-    // Here you would make an API call to save the feedback
-    // After successful submission, you would refetch the consultations
-
-    // Reset form after submission
-    setRating(3);
-    setSelectedConsultation(null);
-    setFeedback({
-      comments: '',
-    });
-    alert("Thank you for your feedback!");
-
-    // Ideally, refetch the consultations to update the lists
-    // This is a placeholder for that logic
-    const updatedConsultation = { ...selectedConsultation, feedback: feedbackData };
-    setConsultationsWithFeedback(prev => [...prev, updatedConsultation]);
-    setConsultationsWithoutFeedback(prev =>
-      prev.filter(c => c._id !== selectedConsultation._id)
-    );
+  
+    try {
+      await axiosInstance.post(
+        `${import.meta.env.VITE_API_URL}/patients/${patientId}/consultations/${selectedConsultation._id}/feedback`,
+        feedbackData
+      );
+  
+      alert("Thank you for your feedback!");
+  
+      // Update feedback lists
+      const updatedConsultation = { ...selectedConsultation, feedback: feedbackData };
+      setConsultationsWithFeedback((prev) => [...prev, updatedConsultation]);
+      setConsultationsWithoutFeedback((prev) =>
+        prev.filter((c) => c._id !== selectedConsultation._id)
+      );
+  
+      // Reset form
+      setRating(3);
+      setSelectedConsultation(null);
+      setFeedback({ comments: '' });
+    } catch (err) {
+      console.error("Error submitting feedback:", err);
+      alert("Failed to submit feedback. Please try again.");
+    } finally {
+      if(!window._authFailed)setSubmitting(false);
+    }
   };
+  
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -322,13 +324,20 @@ const PatientFeedbackForm = () => {
                 ></textarea>
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 px-4 rounded-md transition-colors duration-200 font-medium"
-                disabled={!selectedConsultation}
-              >
-                Submit Feedback
-              </button>
+             <button
+              type="submit"
+              className="w-full bg-teal-500 hover:bg-teal-600 text-white py-3 px-4 rounded-md transition-colors duration-200 font-medium flex justify-center items-center"
+              disabled={!selectedConsultation || submitting}
+            >
+              {submitting ? (
+                <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+              ) : null}
+              {submitting ? 'Submitting...' : 'Submit Feedback'}
+            </button>
+
             </form>
 
             <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col items-center text-gray-400 text-sm">

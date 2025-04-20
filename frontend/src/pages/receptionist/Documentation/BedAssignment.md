@@ -1,86 +1,106 @@
-# Bed Assignment Component Documentation
+# BedAssignment Component Documentation
 
-## User Documentation
+## Overview
 
-### Overview
-The Bed Assignment component is a tool designed for hospital staff to manage and track patient bed assignments within different rooms. It provides a user-friendly interface for assigning patients to beds, viewing occupancy status, and discharging patients.
+The `BedAssignment` component is a React-based interface for managing hospital bed assignments. It provides functionality for healthcare staff to assign patients to beds, discharge patients from beds, and visualize bed occupancy status across different rooms.
 
-### Features
-- View available rooms and their types
-- See bed availability within each room using a visual color-coded grid
-- Assign patients to available beds
-- Discharge patients from occupied beds
-- Error notifications for failed operations
+## Component Structure
 
-### How to Use
+This component utilizes React hooks for state management and Axios for API interactions. It features:
+- Room selection dropdown
+- Visual bed occupancy grid
+- Interactive bed assignment/discharge modal
+- Loading states with visual indicators
+- Error handling and notification system
 
-#### Viewing Rooms and Beds
-1. Select a room from the dropdown menu in the top-right corner
-2. The bed grid will display all beds in the selected room
-3. Available beds appear in light gray
-4. Occupied beds appear in light blue (cyan)
+## State Management
 
-#### Assigning a Patient to a Bed
-1. Click on an available (gray) bed
-2. In the modal that appears, enter:
-   - Patient ID
-   - Nurse ID
-3. Click "Assign" to complete the process
-4. The bed color will change to cyan, indicating it's now occupied
+The component maintains several state variables:
 
-#### Discharging a Patient
-1. Click on an occupied (cyan) bed
-2. Review the patient and nurse information in the modal
-3. Click "Discharge" to free up the bed
-4. The bed color will change to gray, indicating it's now available
+| State | Type | Purpose |
+|-------|------|---------|
+| `selectedRoom` | Number | Currently selected room number |
+| `beds` | Object | Stores bed data for the selected room (occupancy status, patient and nurse IDs) |
+| `selectedBed` | String/Number | Currently selected bed identifier |
+| `patientForm` | Object | Form data for patient and nurse assignment |
+| `showModal` | Boolean | Controls visibility of the assignment/discharge modal |
+| `modalAction` | String | Determines modal mode ('assign' or 'discharge') |
+| `roomList` | Array | List of available rooms with their types |
+| `loading` | Boolean | Tracks initial data loading state |
+| `error` | String | Stores error messages |
+| `actionLoading` | Boolean | Tracks API request status during bed operations |
 
-### Troubleshooting
-- If an error occurs, a red notification will appear and automatically disappear after 5 seconds
-- If the system is loading, a spinning indicator will be displayed
-- If the "Assign" or "Discharge" button seems unresponsive, wait for the current operation to complete
+## API Integration
 
-## Technical Documentation
+The component connects to a backend service with the following endpoints:
 
-### Component Structure
-`BedAssignment` is a React functional component that manages bed assignments for hospital rooms.
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/reception/rooms` | GET | Fetches available rooms |
+| `/api/reception/beds` | GET | Retrieves bed information for a specific room |
+| `/api/reception/assign-bed` | POST | Assigns a patient to a bed |
+| `/api/reception/discharge-bed` | POST | Discharges a patient from a bed |
 
-### State Management
-The component uses React's `useState` hook to manage several state variables:
-- `selectedRoom`: Tracks which room is currently being viewed
-- `beds`: Object containing information about each bed in the room
-- `selectedBed`: Tracks which bed is selected for assignment/discharge
-- `patientForm`: Stores patient and nurse ID data for assignment
-- `showModal`: Controls modal visibility
-- `modalAction`: Determines if modal is for assignment or discharge
-- `roomList`: Stores all available rooms from API
-- `loading`: Indicates when API data is being fetched
-- `error`: Stores error messages from failed operations
-- `actionLoading`: Controls loading state for assignment/discharge actions
+## Key Functions
 
-### API Integration
-The component interacts with a backend API at `http://localhost:5000/api/reception/` with the following endpoints:
-- `GET /rooms`: Fetches all available rooms
-- `GET /beds?room={roomNumber}`: Fetches beds for a specific room
-- `POST /assign-bed`: Assigns a patient to a bed
-- `POST /discharge-bed`: Discharges a patient from a bed
+### `fetchRooms()`
+Fetches available rooms from the API and sets default room selection.
 
-### Key Functions
-- `handleBedClick`: Manages bed selection and determines modal action
-- `handleInputChange`: Updates form data when user inputs information
-- `handleAssignBed`: Makes API call to assign a patient to a bed
-- `handleDischargeBed`: Makes API call to discharge a patient
+```javascript
+const fetchRooms = async () => {
+  setLoading(true);
+  setError('');
+  try {
+    const response = await axios.get('http://localhost:5000/api/reception/rooms');
+    setRoomList(response.data);
+    if (response.data.length > 0) {
+      setSelectedRoom(response.data[0].room_number);
+    }
+  } catch (err) {
+    console.error('Error fetching room list:', err);
+    setError('Failed to fetch room list.');
+  } finally {
+    setLoading(false);
+  }
+};
+```
 
-### Data Structure
-Bed data is structured as an object where:
-- Keys are bed numbers/IDs
-- Values are objects containing:
-  - `occupied`: Boolean indicating if bed is in use
-  - `patientId`: ID of assigned patient (or null)
-  - `nurseId`: ID of assigned nurse (or null)
+### `fetchRoomBeds()`
+Retrieves and formats bed data for the selected room.
 
-### Effect Hooks
-The component uses `useEffect` hooks to:
-1. Fetch room list on component mount
-2. Fetch bed data when selected room changes
-3. Auto-dismiss error messages after 5 seconds
+### `handleBedClick(bedId)`
+Handles bed selection and determines the modal action based on bed occupancy status.
+
+### `handleAssignBed()`
+Processes bed assignment requests and updates the UI accordingly.
+
+### `handleDischargeBed()`
+Processes patient discharge requests and updates the UI accordingly.
+
+## UI Components
+
+The component renders:
+1. Room selection dropdown
+2. Error notification area (conditional)
+3. Interactive bed grid with color-coded occupancy status
+4. Legend explaining the color coding
+5. Modal for bed assignment/discharge with appropriate form fields
+6. Loading indicators for various operations
+
+## Error Handling
+
+The component implements error handling at multiple levels:
+- API request errors with descriptive messages
+- Auto-dismissing error notifications after 5 seconds
+- Fallback to empty state when data fetching fails
+- Proper loading states during asynchronous operations
+
+## Styling
+
+The component uses Tailwind CSS for styling:
+- Responsive grid layout for bed display
+- Color-coded bed status indicators
+- Modal overlay with focus styling
+- Loading spinners for both initial loading and action states
+- Interactive hover effects for bed selection
 

@@ -12,13 +12,13 @@ const ManagePayrolls = () => {
 
   useEffect(() => {
     const fetchEmployees = async () => {
-      try {
+      try { 
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/search-employees`, {
           params: {
             searchQuery,
           },
         });
-        // console.log('Fetched Employees:', response.data);
+        console.log('Fetched Employees:', response.data);
         const employeesWithSelection = response.data.employees.map(emp => ({
           ...emp,
           selected: false, // Initialize selected state
@@ -30,16 +30,19 @@ const ManagePayrolls = () => {
 
         const payrolls = payrollData.data.payrolls;
         console.log('Fetched Payrolls:', payrolls);
-        const employeesWithPayroll = employeesWithSelection.map(emp => {
-          const payroll = payrolls.find(p => p.employee_id === emp._id);
-          return {
-            ...emp,
-            lastDate: payroll ? new Date(payroll.month_year).toLocaleDateString() : 'N/A', // Format date
-            salary: payroll ? payroll.net_salary : (emp.salary ? emp.salary : "N/A"), // Default to 'N/A' if no payroll found
-          };
-        });
-
+        let employeesWithPayroll = employeesWithSelection
+          .map(emp => {
+            const payroll = payrolls.find(p => p.employee_id === emp._id && p.payment_status === 'pending');
+            return payroll ? {
+              ...emp,
+              lastDate: new Date(payroll.month_year).toLocaleDateString(), // Format date
+              salary: payroll.net_salary,
+            } : null;
+          })
+          .filter(emp => emp !== null); // Filter out employees with no 'paid' payroll
+        console.log('Employees with Payroll:', employeesWithPayroll);
         setEmployees(employeesWithPayroll);
+
       } catch (error) {
         console.error('Error fetching employees:', error);
       }
@@ -77,7 +80,22 @@ const ManagePayrolls = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    console.log('Search Query:', searchQuery);
     // In a real application, this would filter the employees list
+    axios.get(`${import.meta.env.VITE_API_URL}/admin/search-employees`, {
+      params: { searchQuery },
+    })
+      .then(response => {
+      console.log('Search Results:', response.data);
+      const employeesWithSelection = response.data.employees.map(emp => ({
+        ...emp,
+        selected: false, // Initialize selected state
+      }));
+      setEmployees(employeesWithSelection);
+      })
+      .catch(error => {
+      console.error('Error fetching search results:', error);
+      });
     console.log('Searching for:', searchQuery);
   };
 
@@ -104,15 +122,12 @@ const ManagePayrolls = () => {
 
 
         setEmployees(updatedEmployees);
-
-
-
         setSelectAll(false);
       } else {
         alert('Failed to process payroll. Please try again.');
       }
     } catch (error) {
-      console.error('Error processing payroll:', error);
+      console.error('Error :', error);
       alert('An error occurred while processing payroll.');
     }
   };
@@ -201,10 +216,6 @@ const ManagePayrolls = () => {
       deduction: '',
       net_salary: '',
     });
-
-
-
-
     setShowPopup(false);;
   };
 
@@ -234,6 +245,7 @@ const ManagePayrolls = () => {
 
           <button
             className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+            onClick = {handleSearch}
           >
             Apply Filters
           </button>
@@ -259,33 +271,40 @@ const ManagePayrolls = () => {
               </tr>
             </thead>
             <tbody>
-              {employees.map((employee) => (
-                <tr key={employee._id} className="border-b bg-gray-100">
-                  <td className="py-2 px-4">
-                    <input
-                      type="checkbox"
-                      checked={employee.selected}
-                      onChange={() => handleSelectEmployee(employee._id)}
-                      className="w-4 h-4"
-                    />
-                  </td>
-                  <td className="py-2 px-4">{employee._id}</td>
-                  <td className="py-2 px-4">{employee.name}</td>
-                  <td className="py-2 px-4">{employee.lastDate}</td>
-                  <td className="py-2 px-4">
-                    {employee.salary}
-                  </td>
-                  <td className="py-2 px-4">
-                    <button
-                      onClick={() => handleUpdateSalary(employee._id)}
-                      className="bg-blue-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-                    >
-                      Update Salary
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+  {employees && employees.length > 0 ? (
+    employees.map((employee) => (
+      <tr key={employee._id} className="border-b bg-gray-100">
+        <td className="py-2 px-4">
+          <input
+            type="checkbox"
+            checked={employee.selected}
+            onChange={() => handleSelectEmployee(employee._id)}
+            className="w-4 h-4"
+          />
+        </td>
+        <td className="py-2 px-4">{employee._id}</td>
+        <td className="py-2 px-4">{employee.name}</td>
+        <td className="py-2 px-4">{employee.lastDate}</td>
+        <td className="py-2 px-4">{employee.salary}</td>
+        <td className="py-2 px-4">
+          <button
+            onClick={() => handleUpdateSalary(employee._id)}
+            className="bg-blue-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Update Salary
+          </button>
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr className="border-b bg-gray-100">
+      <td className="py-2 px-4" colSpan="6">
+        No employees found with pending payroll.
+      </td>
+    </tr>
+  )}
+</tbody>
+
           </table>
         </div>
       </div>

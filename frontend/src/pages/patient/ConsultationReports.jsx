@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+
 
 // Fetch full consultation (but only use diagnosis in UI)
-export const fetchConsultationById = async (consultationId) => {
+export const fetchConsultationById = async (consultationId,axiosInstance) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/view`);
-    if (!response.ok) throw new Error("Failed to fetch consultation");
-    const data = await response.json();
-    return data;
+    const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/view`);
+    return response.data;
   } catch (error) {
     console.error("Fetch error:", error);
     return [];
@@ -23,11 +23,13 @@ const ConsultationReports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const navigate = useNavigate();
   const { id } = useParams();
+    const { axiosInstance } = useAuth();
+  
 
   useEffect(() => {
     const loadReports = async () => {
       try {
-        const data = await fetchConsultationById(id);
+        const data = await fetchConsultationById(id,axiosInstance);
         setReports(data.consultation.reports);
         setConsultation(data.consultation)
         console.log(data)
@@ -38,7 +40,8 @@ const ConsultationReports = () => {
       } catch (error) {
         console.error("Error loading reports:", error);
       } finally {
-        setLoading(false);
+        if (!window._authFailed) setLoading(false);
+
       }
     };
 

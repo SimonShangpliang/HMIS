@@ -690,7 +690,7 @@ const ageDistributionChartData = {
           ) : (
             <>
               <div className="lg:col-span-2">
-                <div className="bg-gray-50 p-4 rounded-lg h-80">
+                <div className="bg-gray-50 p-4 rounded-lg h-80 pb-17">
                 {activeTab === "monthly" ? (
                   <>
                     <h3 className="text-lg font-medium text-gray-700 mb-2">Monthly Trend</h3>

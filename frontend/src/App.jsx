@@ -25,6 +25,8 @@ import Inventory from "./pages/common/Inventory";
 import ContactAdmin from "./pages/common/ContactAdmin";
 import PayrollInfo from "./pages/common/PayrollInfo";
 import PatientInfo from "./pages/common/PatientInfo";
+import ScheduleNotification from './pages/common/ScheduleNotification';
+import NotificationManagement from "./pages/common/NotificationManagement";
 
 // Patient Pages
 import PatientDashboard from "./pages/patient/PatientDashboard";
@@ -96,6 +98,7 @@ import AddBill from "./pages/receptionist/AddBill";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import DoctorAppointment from "./pages/patient/DoctorAppointment";
+import RequestedAppointments from "./pages/receptionist/RequestedAppointments";
 
 
 
@@ -151,6 +154,14 @@ function App() {
             <Route path=":role/contact-admin" element={<ContactAdmin />} />
           </Route>
 
+          <Route element={<ProtectedRoute allowedRoles={["doctor", "nurse", "receptionist", "pathologist", "pharmacist", "admin"]} />}>
+            <Route path=":role/schedule-notification" element={<ScheduleNotification />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["doctor", "nurse", "receptionist", "pathologist", "pharmacist", "admin"]} />}>
+            <Route path=":role/notification-management" element={<NotificationManagement />} />
+          </Route>
+
           <Route element={<ProtectedRoute allowedRoles={["doctor", "nurse", "receptionist", "patient", "pathologist", "pharmacist"]} />}>
             <Route path=":role/payroll-info" element={<PayrollInfo />} />
           </Route>
@@ -191,9 +202,9 @@ function App() {
             <Route path="/doctor" element={<DoctorDashboard />} />
             <Route path="/doctor/appointments" element={<Appointments />} />
             <Route path="/doctor/book-appointment" element={<DoctorAddAppointment />} /> 
-            <Route path="/patient-consultations/:patientId" element={<DocPatientConsultations />} />
-            <Route path="/patient-consultations/:patientId/consultation/:consultationId" element={<DocConsultationDetails />} />
-            <Route path="/patient-progress/:patientId" element={<DocDailyProgress />} />
+            <Route path="/doctor/patient-consultations/:patientId" element={<DocPatientConsultations />} />
+            <Route path="/doctor/patient-consultations/:patientId/consultation/:consultationId" element={<DocConsultationDetails />} />
+            <Route path="/doctor/patient-progress/:patientId" element={<DocDailyProgress />} />
           </Route>
           <Route element={<ProtectedRoute allowedRoles={["doctor","nurse"]} />}>
         
@@ -223,7 +234,7 @@ function App() {
             <Route path="/pathologist/add-report" element={<AddReport />} />
           </Route>
 
-          {/* Reception & Admin Routes */}
+          {/* Reception Routes */}
           <Route element={<ProtectedRoute allowedRoles={["receptionist"]} />}>
             <Route path="/receptionist" element={<ReceptionistDashboard />} />
             <Route path="/receptionist/appointment-booking" element={<AppointmentBooking />} />
@@ -233,6 +244,7 @@ function App() {
             <Route path="/receptionist/registration" element={<Registration />} />
             <Route path="/receptionist/update-appointment" element={<AppointmentUpdate />} />
             <Route path="/receptionist/add-bill" element={<AddBill />} />
+            <Route path="/receptionist/requested-appointments" element={<RequestedAppointments />} />
 
 
           </Route>

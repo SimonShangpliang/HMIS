@@ -6,7 +6,7 @@ import nodemailer from "nodemailer";
 import redisClient from "../config/redisClient.js";
 import Patient from "../models/patient.js";
 import Employee from "../models/employee.js";
-
+import LoginLog from "../models/logs.js"
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -104,6 +104,16 @@ export const login = async (req, res) => {
       sameSite: "Lax",
     });
 
+    // // Only log login for employees 
+    // if (userType !== "patient") {
+    //   const log = new LoginLog({
+    //     user_id: user._id, 
+    //     task: "login"
+    //   });
+    //   await log.save();
+    // }
+
+
     res.json({ accessToken, role: user.role || "patient", user });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
@@ -123,7 +133,18 @@ export const refreshToken = (req, res) => {
   }
 };
 
-export const logout = (req, res) => {
+export const logout = async(req, res) => {
+
+  const { userId } = req.body; //need to pass this from frontend
+
+  // if (userId) {
+  //   const log = new LoginLog({
+  //     user_id: userId,
+  //     task: "logout"
+  //   });
+  //   await log.save();
+  // }
+
   try {
     res.clearCookie("refreshToken");
     res.status(200).json({ message: "Logged out successfully" });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const DocConsultationPrescriptions = ({ consultationId }) => {
-  const [doctorId, setDoctorId] = useState("10008"); // Replace with dynamic doctor ID
+  const doctorId = localStorage.getItem("role_id");
 
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -12,33 +12,25 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
   const handleSaveAll = async () => {
     const updatedPrescription = {
       ...prescription,
-      entries: entries
+      entries: entries,
     };
-    console.log("hello" ) ; 
+
     console.log("Updated Prescription:", updatedPrescription);
 
-    // for(entry of updatedPrescription.entries){
-    //   if(entry.medicine_id === ""){
-    //         // save to database 
-
-    //   }
-    // }
-   
-    
     try {
-      await axios.post(`http://localhost:5000/api/doctors/updateConsultations/${consultationId}/addprescriptions`, 
- updatedPrescription,
-        
+      await axios.post(
+        `${import.meta.env.VITE_API_URL}/doctors/updateConsultations/${consultationId}/addprescriptions`,
+        updatedPrescription,
         {
           params: { doctor: doctorId },
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        });
-      
+        }
+      );
+
       setEditing(false);
     } catch (err) {
-      // console.error("Failed to update prescription:", err);
       console.error("Failed to update prescription:", err.response?.data || err.message);
     }
   };
@@ -54,20 +46,22 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
     setEntries(updated);
   };
 
-  // Mock data fetching function
   const fetchPrescriptionsByConsultationId = async (consultationId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/consultations/${consultationId}/view`, {
-        // params: { id: consultationId }, // Pass query param here
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      setPrescription(response.data.consultation.prescription[0]);
-      return response.data.consultation.prescription[0].entries; // Assuming your backend sends the consultation in the response body
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/consultations/${consultationId}/view`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setPrescription(response.data.consultation.prescription[0] || {});
+      return response.data.consultation?.prescription[0]?.entries || [];
     } catch (error) {
       console.error("Error fetching consultation details:", error);
-      return null; // Fallback: return null if there's an error
+      return [];
     }
   };
 
@@ -76,23 +70,18 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
       setLoading(true);
       try {
         const data = await fetchPrescriptionsByConsultationId(consultationId);
-        setEntries(data);
-        setLoading(false);
+        console.log("Fetched Prescriptions:", data);
+        setEntries(data || []);
       } catch (error) {
         console.error("Error loading prescriptions:", error);
+        setEntries([]);
+      } finally {
         setLoading(false);
       }
     };
 
     loadPrescriptions();
   }, [consultationId]);
-
-
-
-  const handleSave = () => {
-    setEditing(false);
-    // In a real app, you would send the updated prescription to the server
-  };
 
   const handleAddEntry = () => {
     const newEntry = {
@@ -103,13 +92,14 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
       quantity: 0,
       dispensed_qty: 0,
     };
-    setEntries([...entries, newEntry]);
+
+    setEntries((prev) => [...(prev || []), newEntry]);
   };
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Prescriptions</h2>
-      
+
       {loading ? (
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900 mx-auto"></div>
@@ -131,8 +121,8 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
               Save All
             </button>
           </div>
-      
-          {entries.length > 0 ? (
+
+          {entries?.length > 0 ? (
             <div className="space-y-4 mt-4">
               {entries.map((entry, index) => (
                 <div key={index} className="border rounded p-4 bg-gray-50">
@@ -141,46 +131,54 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
                       <p className="text-gray-500 text-sm">Medicine</p>
                       <input
                         type="text"
-                        value={entry.medicine_id?.med_name  }
-                        onChange={(e) => handleEntryChange(index, 'medicine', e.target.value)}
+                        value={entry.medicine_id?.med_name}
+                        onChange={(e) =>
+                          handleEntryChange(index, "medicine", e.target.value)
+                        }
                         placeholder="Medicine"
                         className="font-medium"
                       />
                     </div>
-      
+
                     <div>
                       <p className="text-gray-500 text-sm">Dosage</p>
                       <input
                         type="text"
                         value={entry.dosage}
-                        onChange={(e) => handleEntryChange(index, 'dosage', e.target.value)}
+                        onChange={(e) =>
+                          handleEntryChange(index, "dosage", e.target.value)
+                        }
                         placeholder="Dosage"
                         className="font-medium"
                       />
                     </div>
-      
+
                     <div>
                       <p className="text-gray-500 text-sm">Frequency</p>
                       <input
                         type="text"
                         value={entry.frequency}
-                        onChange={(e) => handleEntryChange(index, 'frequency', e.target.value)}
+                        onChange={(e) =>
+                          handleEntryChange(index, "frequency", e.target.value)
+                        }
                         placeholder="Frequency"
                         className="font-medium"
                       />
                     </div>
-      
+
                     <div>
                       <p className="text-gray-500 text-sm">Duration</p>
                       <input
                         type="text"
                         value={entry.duration}
-                        onChange={(e) => handleEntryChange(index, 'duration', e.target.value)}
+                        onChange={(e) =>
+                          handleEntryChange(index, "duration", e.target.value)
+                        }
                         placeholder="Duration"
                         className="font-medium"
                       />
                     </div>
-      
+
                     <div className="flex items-center justify-start space-x-2 col-span-2">
                       <button
                         onClick={() => handleEntryChange(index)}
@@ -196,7 +194,7 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
                       </button>
                     </div>
                   </div>
-      
+
                   {entry.notes && (
                     <div className="mt-2 pt-2 border-t">
                       <p className="text-gray-500 text-sm">Notes</p>
@@ -212,8 +210,7 @@ const DocConsultationPrescriptions = ({ consultationId }) => {
             </div>
           )}
         </>
-      )
-      }
+      )}
     </div>
   );
 };

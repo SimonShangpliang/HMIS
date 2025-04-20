@@ -6,9 +6,20 @@ const ResetPassword = () => {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
+  const [passwordError, setPasswordError] = useState("");
+
+  const validatePassword = () => {
+    if (password.length < 6) {
+      setPasswordError("Password must be at least 6 characters long");
+      return false;
+    }
+    setPasswordError(""); // clear if valid
+    return true;
+  };
 
   const handleReset = async (e) => {
     e.preventDefault();
+    if (!validatePassword()) return;
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`, {
         method: "POST",
@@ -44,6 +55,10 @@ const ResetPassword = () => {
           required
           className="w-full p-3 border border-gray-300 rounded-lg mb-4"
         />
+          {passwordError && (
+          <p className="text-sm text-red-600 mb-2">{passwordError}</p>
+          )}
+
         <button
           type="submit"
           className="w-full p-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700"

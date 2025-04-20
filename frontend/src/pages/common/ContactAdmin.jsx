@@ -18,7 +18,7 @@ const ContactAdmin = () => {
     setIsError(false);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/employees/send', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/employees/send`, {
         subject,
         message,
         email

@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
-export const fetchBillByConsultationId = async (consultationId) => {
+
+export const fetchBillByConsultationId = async (consultationId,axiosInstance) => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/bill`);
-    if (!response.ok) throw new Error("Failed to fetch bill");
-
-    const data = await response.json();
-    return data.bill;
+    const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/bill`);
+    return response.data.bill;
   } catch (error) {
     console.error("Fetch bill error:", error);
     return null;
@@ -19,17 +18,19 @@ const ConsultantBills = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { id } = useParams();
+  const { axiosInstance } = useAuth();
+  
 
   // Fetch bill details by consultation ID
   useEffect(() => {
     const loadBill = async () => {
       try {
-        const data = await fetchBillByConsultationId(id);
+        const data = await fetchBillByConsultationId(id,axiosInstance);
         setBill(data);
       } catch (error) {
         console.error("Error loading bill:", error);
       } finally {
-        setLoading(false);
+        if (!window._authFailed) setLoading(false);
       }
     };
 

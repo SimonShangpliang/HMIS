@@ -48,7 +48,7 @@ const fetchPatientInsurance = async (patientId) => {
 };
 const fetchAvailableRooms = async () => {
   try {
-    const res = await axios.get('http://localhost:5000/api/reception/rooms');
+    const res = await axios.get(`${import.meta.env.VITE_API_URL}/reception/rooms`);
     
     const data=await res.data
  

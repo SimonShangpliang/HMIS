@@ -17,7 +17,7 @@ const DocConsultationReports = ({ consultationId }) => {
   // Mock data fetching function
   const fetchReportsByConsultationId = async (consultationId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/consultations/${consultationId}/view`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/view`, {
         // params: { id: consultationId }, // Pass query param here
         headers: {
           'Content-Type': 'application/json',
@@ -36,9 +36,10 @@ const DocConsultationReports = ({ consultationId }) => {
     setIsSubmitting(true);
 
     try {
-      const doctorId = "10008"; // Hardcoded doctor ID, you can dynamically set this based on the logged-in user
+      const doctorId = localStorage.getItem("role_id"); // Get the doctor ID from local storage
+      
       const response = await axios.post(
-        `http://localhost:5000/api/doctors/updateConsultations/${consultationId}/addreports?doctor="${doctorId}"`,
+        `${import.meta.env.VITE_API_URL}/doctors/updateConsultations/${consultationId}/addreports?doctor="${doctorId}"`,
         reportData,
         {
           headers: {
@@ -96,8 +97,9 @@ const DocConsultationReports = ({ consultationId }) => {
         </div>
       ) : reports.length > 0 ? (
         <div className="space-y-4">
-          {reports.map((report) => (
-            <div key={report.createdBy} className="border rounded p-4 bg-gray-50">
+          {reports.map((report, index) => (
+              <div key={index} className="border rounded p-4 bg-gray-50">
+
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-medium">{report.title}</h3>
                 <span className="text-sm text-gray-500">

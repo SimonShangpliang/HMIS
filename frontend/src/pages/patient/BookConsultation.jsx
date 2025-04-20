@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/patient/BookConsultation.css";
 import { Search } from "lucide-react";
 import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 
 const BookConsultation = () => {
   const navigate = useNavigate();
@@ -15,13 +16,14 @@ const BookConsultation = () => {
   const [departments, setDepartments] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [selectedDoctors, setSelectedDoctors] = useState([]);
+  const {axiosInstance } = useAuth();
 
   // Fetch doctors from the API
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/patients/doctors`);
+        const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/patients/doctors`);
         setDoctors(response.data);
         setFilteredDoctors(response.data);
         // console.log(response.data); // Log the response data for debugging
@@ -35,8 +37,13 @@ const BookConsultation = () => {
       } catch (err) {
         console.error('Error fetching doctors:', err);
         setError('Failed to fetch doctors. Please try again later.');
-        setLoading(false);
       }
+      finally{
+        if (!window._authFailed) {
+          setLoading(false);
+        }
+      }
+      
     };
 
     fetchDoctors();
