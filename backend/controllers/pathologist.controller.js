@@ -1,6 +1,7 @@
 import Patient from "../models/patient.js";
 import Equipment from "../models/equipment.js";
 import { Consultation, Report } from "../models/consultation.js";
+import cloudinary from "../config/cloudinary.js";
 
 // Search equipment by name
 export const searchEquipment = async (req, res) => {
@@ -77,7 +78,6 @@ export const uploadReport = async (req, res) => {
       testId,
       reportTitle,
       reportType,
-      reportFile,
       description,
     } = req.body;
 
@@ -99,10 +99,10 @@ export const uploadReport = async (req, res) => {
       return res.status(404).json({ message: "Patient not found." });
     }
 
-    // Create report object
+    // Create report object using the Cloudinary URL
     const report = {
       status: "completed",
-      reportFile: req.file.path,
+      reportFile: req.file.path, // This will be the Cloudinary URL
       reportText: req.file.filename,
       title: reportTitle,
       type: reportType,
@@ -116,9 +116,8 @@ export const uploadReport = async (req, res) => {
     if (!consultation) {
       return res.status(404).json({ message: "Consultation not found." });
     }
-
     if (testId) {
-      // If testId provided, update existing test
+      // Update existing test
       const testIndex = consultation.reports.findIndex(
         (report) => report._id.toString() === testId
       );
@@ -127,16 +126,28 @@ export const uploadReport = async (req, res) => {
           .status(404)
           .json({ message: "Test not found in consultation." });
       }
+
+      // If there's an existing report file, delete it from Cloudinary
+      if (consultation.reports[testIndex].reportFile) {
+        const oldFileUrl = consultation.reports[testIndex].reportFile;
+        // Extract the public ID using patientId-reportId format
+        const publicId = `test_reports/${patientId}-${testId}`;
+        try {
+          await cloudinary.uploader.destroy(publicId);
+        } catch (error) {
+          console.error("Error deleting old file from Cloudinary:", error);
+        }
+      }
+
       consultation.reports[testIndex] = {
         ...consultation.reports[testIndex],
         ...report,
       };
     } else {
-      // Add new report to existing consultation
-      const newReport = new Report(report);
-      await newReport.save();
-      consultation.reports.push({ ...report, _id: newReport._id });
+      // Add new report
+      consultation.reports.push(report);
     }
+
     await consultation.save();
 
     res.status(200).json({

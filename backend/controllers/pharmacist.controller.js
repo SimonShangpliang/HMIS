@@ -172,16 +172,15 @@ export const updatePrescriptionEntry = async (req, res) => {
         .json({ message: "Valid dispensed quantity is required." });
     }
 
+    const medicine = await Medicine.findById(entry.medicine_id);
+    if (!medicine) {
+      return res.status(404).json({ message: "Medicine not found." });
+    }
     // Prevent exceeding prescribed quantity
     if (dispensed_qty > entry.quantity) {
       return res.status(400).json({
         message: "Dispensed quantity cannot exceed prescribed quantity.",
       });
-    }
-
-    const medicine = await Medicine.findById(entry.medicine_id);
-    if (!medicine) {
-      return res.status(404).json({ message: "Medicine not found." });
     }
 
     // Calculate how many more units need to be dispensed

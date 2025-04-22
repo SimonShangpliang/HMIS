@@ -36,6 +36,7 @@ const ReportSchema = new Schema(
     title: { type: String, required: true },
     description: String,
     reportText: String,
+    reportFile: String, // URL to the file in Cloudinary
     createdBy: { type: Schema.Types.ObjectId },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
@@ -50,7 +51,7 @@ const ConsultationSchema = new Schema(
     booked_date_time: Date,
     status: {
       type: String,
-      enum: ["requested","scheduled", "ongoing", "completed", "cancelled"],
+      enum: ["requested", "scheduled", "ongoing", "completed", "cancelled"],
     },
     reason: String, //symptoms
     created_by: { type: Schema.Types.ObjectId, ref: "Receptionist" },
