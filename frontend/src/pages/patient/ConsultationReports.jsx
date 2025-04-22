@@ -2,9 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-
 // Fetch full consultation (but only use diagnosis in UI)
-export const fetchConsultationById = async (consultationId,axiosInstance) => {
+export const fetchConsultationById = async (consultationId, axiosInstance) => {
   try {
     const response = await axiosInstance.get(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/view`);
     return response.data;
@@ -14,34 +13,38 @@ export const fetchConsultationById = async (consultationId,axiosInstance) => {
   }
 };
 
-
 const ConsultationReports = () => {
   const [consultation, setConsultation] = useState(null);
   const [reports, setReports] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const navigate = useNavigate();
   const { id } = useParams();
-    const { axiosInstance } = useAuth();
-  
+  const { axiosInstance } = useAuth();
+
+  const handleDownload = async (reportId) => {
+    try {
+      window.open(`${import.meta.env.VITE_API_URL}/doctors/consultations/${id}/reports/${reportId}/download`, '_blank');
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Error downloading report');
+    }
+  };
 
   useEffect(() => {
     const loadReports = async () => {
       try {
-        const data = await fetchConsultationById(id,axiosInstance);
+        const data = await fetchConsultationById(id, axiosInstance);
         setReports(data.consultation.reports);
-        setConsultation(data.consultation)
-        console.log(data)
+        setConsultation(data.consultation);
+        console.log(data);
         if (data.length > 0) {
           //   setSelectedReport(data[0]);
         }
-
       } catch (error) {
         console.error("Error loading reports:", error);
       } finally {
         if (!window._authFailed) setLoading(false);
-
       }
     };
 
@@ -61,8 +64,9 @@ const ConsultationReports = () => {
           <div className="font-medium">Details</div>
         </div>
       </div>
-      {/* Table Data Row - Now visible */}
-      <div className="grid grid-cols-4 p-4 bg-white border border-t-0 rounded-b-lg">
+
+      {/* Table Data Row */}
+      <div className="grid grid-cols-4 p-4 bg-white border border-t-0 rounded-b-lg mb-8">
         <div>{consultation.date}</div>
         <div className="flex items-center space-x-2">
           {consultation.doctor?.profilePic && (
@@ -80,6 +84,7 @@ const ConsultationReports = () => {
         <div>{consultation.location}</div>
         <div>{consultation.details}</div>
       </div>
+
       {/* Report Section */}
       <div className="mb-6">
         <h2 className="text-xl font-bold mb-4">Reports</h2>
@@ -92,33 +97,36 @@ const ConsultationReports = () => {
           {reports.map((rpt, index) => (
             <div
               key={rpt._id}
-              onClick={() => setSelectedReport(rpt)}
-              className={`p-3 rounded-md cursor-pointer border hover:bg-gray-100 ${selectedReport?._id === rpt._id ? "bg-gray-200 border-blue-500" : "bg-white"
-                }`}
+              className="p-4 rounded-md border bg-white hover:bg-gray-50 transition-colors"
             >
-              <div className="font-medium">{rpt.title || `Report ${index + 1}`}</div>
-              <div className="text-sm text-gray-600">{new Date(rpt.createdAt).toLocaleDateString()}</div>
-              <div className="text-sm text-gray-600">Status: {rpt.status}</div>
+              <div className="flex justify-between items-center mb-2">
+                <div
+                  onClick={() => setSelectedReport(rpt)}
+                  className="cursor-pointer"
+                >
+                  <div className="font-medium">{rpt.title || `Report ${index + 1}`}</div>
+                  <div className="text-sm text-gray-600">{new Date(rpt.createdAt).toLocaleDateString()}</div>
+                  <div className="text-sm text-gray-600">Status: {rpt.status}</div>
+                </div>
+                {rpt.reportFile && (
+                  <button
+                    onClick={() => handleDownload(rpt._id)}
+                    className="inline-flex items-center px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
 
         {/* Selected Report Detail */}
-        {selectedReport ? (
-          <div className="bg-gray-300 rounded-md p-6 min-h-64">
-            <p><strong>Title:</strong> {selectedReport.title}</p>
-            <p><strong>Date:</strong> {new Date(selectedReport.createdAt).toLocaleString()}</p>
-            <p><strong>Status:</strong> {selectedReport.status?.toUpperCase()}</p>
-            <p><strong>Description:</strong> {selectedReport.description}</p>
-            <p className="mt-4"><strong>Report Text:</strong><br />{selectedReport.reportText}</p>
-          </div>
-        ) : (
-          <div className="bg-gray-300 rounded-md p-6 min-h-64 flex items-center justify-center">
-            <p>No report selected. Please select a report to view details.</p>
-          </div>
-        )}
+        
       </div>
-
 
       {/* Back Button */}
       <div className="flex justify-end">

@@ -14,19 +14,27 @@ const DocConsultationReports = ({ consultationId }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleDownload = async (reportId) => {
+    try {
+      window.open(`${import.meta.env.VITE_API_URL}/doctors/consultations/${consultationId}/reports/${reportId}/download`, '_blank');
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Error downloading report');
+    }
+  };
+
   // Mock data fetching function
   const fetchReportsByConsultationId = async (consultationId) => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/consultations/${consultationId}/view`, {
-        // params: { id: consultationId }, // Pass query param here
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      return response.data.consultation.reports; // Assuming your backend sends the consultation in the response body
+      return response.data.consultation.reports;
     } catch (error) {
       console.error("Error fetching consultation details:", error);
-      return null; // Fallback: return null if there's an error
+      return null;
     }
   };
 
@@ -37,7 +45,7 @@ const DocConsultationReports = ({ consultationId }) => {
 
     try {
       const doctorId = localStorage.getItem("role_id"); // Get the doctor ID from local storage
-      
+
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/doctors/updateConsultations/${consultationId}/addreports?doctor="${doctorId}"`,
         reportData,
@@ -70,6 +78,7 @@ const DocConsultationReports = ({ consultationId }) => {
     }
   };
 
+  // Load reports on component mount and consultationId change
   useEffect(() => {
     const loadReports = async () => {
       setLoading(true);
@@ -89,7 +98,6 @@ const DocConsultationReports = ({ consultationId }) => {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Reports</h2>
-
       {loading ? (
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900 mx-auto"></div>
@@ -98,25 +106,33 @@ const DocConsultationReports = ({ consultationId }) => {
       ) : reports.length > 0 ? (
         <div className="space-y-4">
           {reports.map((report, index) => (
-              <div key={index} className="border rounded p-4 bg-gray-50">
-
+            <div key={index} className="border rounded p-4 bg-gray-50">
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-medium">{report.title}</h3>
                 <span className="text-sm text-gray-500">
-                  {new Date(report.createdAt).toLocaleDateString()} |  {new Date(report.createdAt).toLocaleTimeString()}
+                  {new Date(report.createdAt).toLocaleDateString()} | {new Date(report.createdAt).toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-gray-700">{report.reportText}</p>
-              <div className="mt-2">
+              <div className="mt-2 flex justify-between items-center">
                 <span
-                  className={`px-2 py-1 text-xs rounded ${
-                    report.status === "completed"
+                  className={`px-2 py-1 text-xs rounded ${report.status === "completed"
                       ? "bg-green-100 text-green-800"
                       : "bg-yellow-100 text-yellow-800"
-                  }`}
+                    }`}
                 >
                   {report.status === "completed" ? "Completed" : "Pending"}
                 </span>
+                {report.reportFile && (
+                  <button
+                    onClick={() => handleDownload(report._id)}
+                    className="inline-flex items-center px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -162,9 +178,8 @@ const DocConsultationReports = ({ consultationId }) => {
             <button
               onClick={addReport}
               disabled={isSubmitting}
-              className={`${
-                isSubmitting ? "bg-gray-300" : "bg-blue-500"
-              } text-white px-4 py-2 rounded`}
+              className={`${isSubmitting ? "bg-gray-300" : "bg-blue-500"
+                } text-white px-4 py-2 rounded`}
             >
               {isSubmitting ? "Adding..." : "Add Report"}
             </button>
