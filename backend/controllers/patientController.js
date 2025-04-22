@@ -180,7 +180,7 @@ const getAllDoctors = async (req, res) => {
     const allDoctors = await Doctor.find({ employee_id: { $ne: null } })
     .populate({
       path: 'employee_id',
-      select: 'name email phone_number address'
+      select: 'name email phone_number address date_of_joining'
     })
     .populate({
       path: 'department_id',
@@ -201,6 +201,7 @@ const getAllDoctors = async (req, res) => {
     res.status(500).json({ message: 'Server error fetching doctors' });
   }
 };
+
 const getDoctorById = async (req, res) => {
 
 try {
@@ -210,7 +211,7 @@ try {
   const doctor = await Doctor.findById(id)
     .populate({
       path: 'employee_id',
-      select: 'name profile_pic phone_number email gender address emergency_contact',
+      select: 'name profile_pic phone_number email gender address emergency_contact date_of_joining',
       model: Employee
     })
     .populate({
@@ -333,7 +334,7 @@ export const rescheduleConsultation = async (req, res) => {
       return res.status(404).json({ success: false, error: "Consultation not found." });
     }
 
-    if (!["scheduled", "ongoing"].includes(consultation.status)) {
+    if (!["scheduled", "ongoing", "requested"].includes(consultation.status)) {
       return res.status(400).json({
         success: false,
         error: `Consultation cannot be rescheduled because it is marked as '${consultation.status}'.`,
