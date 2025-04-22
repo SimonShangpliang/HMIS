@@ -55,7 +55,7 @@ const PatientInfo = () => {
 
     } catch (error) {
       console.error("Error dispensing medicine:", error);
-      alert('Failed to dispense medicine. Please try again.\n ' + error.message);
+      alert('Failed to dispense medicine. Please try again.\n ' + error.response.data.message);
     }
   };
 
