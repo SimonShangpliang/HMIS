@@ -39,8 +39,8 @@ export const forgotPassword = async (req, res) => {
       },
     });
 
-    const resetLink = `http://localhost:5173/reset-password/${token}`;
-    await transporter.sendMail({
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/${token}`;
+        await transporter.sendMail({
       from: '"MyApp Support" <hmis.iitg@gmail.com>',
       to: user.email,
       subject: "Password Reset",
