@@ -463,9 +463,9 @@ export const downloadReport = async (req, res) => {
         secure: true,
         format: fileExt,
       });
-
+      console.log("trying to download")
       // Redirect to the download URL
-      return res.redirect(downloadUrl);
+      return res.redirect(report.reportFile);
     } catch (cloudinaryError) {
       console.error("Cloudinary error:", cloudinaryError);
       return res.status(500).json({ error: "Error accessing report file" });
