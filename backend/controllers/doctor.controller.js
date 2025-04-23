@@ -73,7 +73,6 @@ export const updateAppointments = async (req, res) => {
     }
 
     const { id, isDone } = req.body;
-
     if (!id || typeof isDone !== "boolean") {
       return res
         .status(400)
@@ -84,6 +83,7 @@ export const updateAppointments = async (req, res) => {
       return res.status(400).json({ error: "Invalid consultation ID format" });
     }
 
+
     const consultation = await Consultation.findOne({
       _id: id,
       doctor_id: doctorId,
@@ -93,7 +93,7 @@ export const updateAppointments = async (req, res) => {
         .status(404)
         .json({ error: "Consultation not found for this doctor" });
     }
-
+    
     consultation.status = isDone ? "completed" : "ongoing";
     await consultation.save();
 

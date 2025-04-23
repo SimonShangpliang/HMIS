@@ -9,6 +9,7 @@ const Appointments = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const doctorId = localStorage.getItem("role_id");
   const navigate = useNavigate();
 
@@ -60,6 +61,46 @@ const Appointments = () => {
     setSelectedAppointment(null);
   };
   
+  const updateAppointmentStatus = async (appointmentId, newStatus,isDone) => {
+    try {
+      setIsUpdatingStatus(true);
+      
+      // Determine if marking as completed
+      
+      await axios.put(`${import.meta.env.VITE_API_URL}/doctors/appointments`, 
+        { id: appointmentId, isDone },
+        { 
+          params: { user: doctorId },
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+      
+      // Update appointment in state
+      const updatedAppointments = appointments.map(appointment => {
+        if (appointment.id === appointmentId) {
+          return { ...appointment, status: newStatus };
+        }
+        return appointment;
+      });
+      
+      setAppointments(updatedAppointments);
+      
+      // If there's a selected appointment, update it too
+      if (selectedAppointment && selectedAppointment.id === appointmentId) {
+        setSelectedAppointment({ ...selectedAppointment, status: newStatus });
+      }
+      
+      // Show success message
+      alert(`Appointment status updated to ${newStatus} successfully!`);
+      
+    } catch (error) {
+      console.error("Failed to update appointment status:", error.message);
+      alert("Failed to update appointment status. Please try again.");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+  
   // Filter appointments based on status and search query
   const filteredAppointments = appointments
     .filter(appointment => 
@@ -79,6 +120,21 @@ const Appointments = () => {
         return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
       default:
         return 'bg-gray-50 text-gray-700 border border-gray-200';
+    }
+  };
+
+  const getStatusButtonColors = (buttonStatus, currentStatus) => {
+    if (buttonStatus === currentStatus) {
+      return "opacity-50 cursor-not-allowed";
+    }
+    
+    switch (buttonStatus) {
+      case 'ongoing':
+        return "bg-amber-500 hover:bg-amber-600 focus:ring-amber-500";
+      case 'completed':
+        return "bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500";
+      default:
+        return "bg-gray-500 hover:bg-gray-600 focus:ring-gray-500";
     }
   };
 
@@ -345,6 +401,36 @@ const Appointments = () => {
                 <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedAppointment.status)}`}>
                   {selectedAppointment.status}
                 </span>
+              </div>
+              
+              {/* Status Management Buttons */}
+              <div>
+                <p className="text-sm text-gray-500 mb-2">Update Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAppointment.status !== "ongoing" && (
+                    <button 
+                      onClick={() => updateAppointmentStatus(selectedAppointment.id, "ongoing",false)}
+                      disabled={isUpdatingStatus || selectedAppointment.status === "completed"}
+                      className={`px-3 py-1.5 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all shadow-sm ${
+                        selectedAppointment.status === "completed" 
+                          ? "bg-gray-300 cursor-not-allowed"
+                          : "bg-amber-500 hover:bg-amber-600 focus:ring-amber-500"
+                      }`}
+                    >
+                      {isUpdatingStatus ? "Updating..." : "Mark as Ongoing"}
+                    </button>
+                  )}
+                  
+                  {selectedAppointment.status !== "completed" && (
+                    <button 
+                      onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed",true)}
+                      disabled={isUpdatingStatus}
+                      className="px-3 py-1.5 text-sm font-medium text-white bg-emerald-500 rounded-lg hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all shadow-sm"
+                    >
+                      {isUpdatingStatus ? "Updating..." : "Mark as Completed"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             
