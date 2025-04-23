@@ -287,7 +287,7 @@ export const sendFeedback = async (req, res) => {
       doctor.num_ratings += 1;
       doctor.rating = totalRatingPoints / doctor.num_ratings;
       
-      updatedDoctor = await doctor.save();
+      const updatedDoctor = await doctor.save();
     }
     res.status(200).json({ message: 'Feedback submitted successfully', feedback: consultation.feedback });
   } catch (error) {
