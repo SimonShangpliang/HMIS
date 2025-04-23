@@ -95,7 +95,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: url('../public/heartbeat-bg.png');
+  background-image: url('/heartbeat-bg.png');
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
