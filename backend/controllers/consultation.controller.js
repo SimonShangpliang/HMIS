@@ -521,7 +521,13 @@ export const updateConsultation = async (req, res) => {
     if (reason) consultation.reason = reason;
     if (appointment_type) consultation.appointment_type = appointment_type;
     if (updated_by) consultation.updated_by = updated_by;
-    if (status)consultation.status=status
+    if (status) {
+      consultation.status = status
+      //if status changed to ongoing or completed, set the actual_start_time to now.
+        if (status === 'ongoing' || status === 'completed') {
+            consultation.actual_start_datetime = new Date();
+        }
+    }
     if (bill_id)consultation.bill_id=bill_id
     await consultation.save();
 
