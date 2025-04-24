@@ -619,7 +619,7 @@ const Bills = () => {
                   disabled={loading}
                 >
                   {loading ? "Processing..." : "Add Payment"}
-                </button>s
+                </button>
               </div>
             </form>
           </div>
